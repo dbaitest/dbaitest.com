@@ -7,7 +7,7 @@ import { dbTestLandingStrings } from '../../i18n/db-test-landing-strings';
 import { siteStrings } from '../../i18n/hub-strings';
 import SiteFooter from '../shared/SiteFooter.astro';
 import { dacpacSampleUrl } from '../../lib/upstream-snippets';
-import { SPONSOR_URL, localePath, type Locale } from '../shared/site';
+import { localePath, type Locale } from '../shared/site';
 import EngineCodeSample from './EngineCodeSample.astro';
 import FeatureGrid from './FeatureGrid.astro';
 import Hero from './Hero.astro';
@@ -63,7 +63,6 @@ const GETTING_STARTED_PATH = '/db-test/docs/getting-started/';
       { label: t.footerNuget, href: `https://www.nuget.org/packages/${nuget}` },
       { label: t.footerChangelog, href: `${repoUrl}/blob/main/CHANGELOG.md` },
       { label: t.footerLicense, href: `${repoUrl}/blob/main/LICENSE` },
-      { label: site.sponsor, href: SPONSOR_URL },
     ]}
   />
 </LandingLayout>

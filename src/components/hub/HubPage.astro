@@ -6,7 +6,7 @@ import LandingLayout from '../../layouts/LandingLayout.astro';
 import { hubStrings, siteStrings } from '../../i18n/hub-strings';
 import ProjectCard from '../shared/ProjectCard.astro';
 import SiteFooter from '../shared/SiteFooter.astro';
-import { GITHUB_URL, SPONSOR_URL, localePath, type Locale } from '../shared/site';
+import { GITHUB_URL, localePath, type Locale } from '../shared/site';
 
 interface Props {
   locale: Locale;
@@ -68,7 +68,6 @@ const cards = Object.entries(projects).map(([id, project]) => {
     path="/"
     links={[
       { label: site.github, href: GITHUB_URL },
-      { label: site.sponsor, href: SPONSOR_URL },
     ]}
   />
 </LandingLayout>
