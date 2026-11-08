@@ -1,0 +1,101 @@
+---
+// The hub: brand intro plus one card per entry of projects.json. Adding a project means a new
+// projects.json entry and a new `hubStrings.projects` entry; this file does not change.
+import projects from '../../../projects.json';
+import LandingLayout from '../../layouts/LandingLayout.astro';
+import { hubStrings, siteStrings } from '../../i18n/hub-strings';
+import ProjectCard from '../shared/ProjectCard.astro';
+import SiteFooter from '../shared/SiteFooter.astro';
+import { GITHUB_URL, SPONSOR_URL, localePath, type Locale } from '../shared/site';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = hubStrings[locale];
+const site = siteStrings[locale];
+
+const cards = Object.entries(projects).map(([id, project]) => {
+  const copy = t.projects[id];
+  // A project without card copy must fail the build, not render an empty card.
+  if (!copy) throw new Error(`hub: projects.json lists "${id}" but hubStrings.${locale}.projects has no entry for it`);
+  return {
+    id,
+    release: project.ref,
+    tagline: copy.tagline,
+    tags: copy.tags,
+    overviewHref: localePath(locale, `/${id}/`),
+    docsHref: localePath(locale, `/${id}/docs/`),
+  };
+});
+---
+
+<LandingLayout locale={locale} title={t.title} description={t.description} path="/" ogImage="/og.png" ogImageAlt={t.ogAlt}>
+  <main id="main">
+    <section class="hero" aria-labelledby="hub-title">
+      <div class="container">
+        <p class="eyebrow">{t.eyebrow}</p>
+        <h1 id="hub-title">{t.heading}</h1>
+        <p class="hero__intro">{t.intro}</p>
+      </div>
+    </section>
+    <section class="section projects" aria-labelledby="projects-title">
+      <div class="container">
+        <h2 id="projects-title" class="projects__title">{t.projectsHeading}</h2>
+        <div class="projects__grid">
+          {
+            cards.map((card) => (
+              <ProjectCard
+                name={card.id}
+                tagline={card.tagline}
+                tags={card.tags}
+                release={card.release}
+                releaseLabel={t.release}
+                overviewHref={card.overviewHref}
+                overviewLabel={t.overview}
+                docsHref={card.docsHref}
+                docsLabel={t.docs}
+              />
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+  <SiteFooter
+    locale={locale}
+    path="/"
+    links={[
+      { label: site.github, href: GITHUB_URL },
+      { label: site.sponsor, href: SPONSOR_URL },
+    ]}
+  />
+</LandingLayout>
+
+<style>
+  .hero {
+    padding-block: clamp(3.5rem, 10vw, 7rem) clamp(2rem, 5vw, 3.5rem);
+  }
+  .hero h1 {
+    max-width: 18ch;
+    font-size: clamp(2.25rem, 7vw, 4rem);
+  }
+  .hero__intro {
+    max-width: 40rem;
+    margin-top: 1.5rem;
+    font-size: clamp(1.0625rem, 2.5vw, 1.25rem);
+  }
+  .projects {
+    padding-top: 1rem;
+  }
+  .projects__title {
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+  }
+  .projects__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: 1.25rem;
+  }
+</style>

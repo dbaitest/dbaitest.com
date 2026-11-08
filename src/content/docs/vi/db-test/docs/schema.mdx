@@ -1,0 +1,100 @@
+---
+title: Schema
+description: Cách db-test tìm, sắp thứ tự, tách và áp dụng một thư mục file SQL, và cách nó báo cáo các file bị loại trừ và script bị lỗi.
+---
+
+import { Code, TabItem, Tabs } from '@astrojs/starlight/components';
+import { schemaCopyToOutput, schemaLoaderSample, schemaStartAsync } from '../../../../../lib/upstream-snippets';
+
+Trỏ harness vào một thư mục chứa file SQL. db-test áp dụng chúng lần lượt lên container mới.
+
+Với schema không phải một thư mục file SQL, chẳng hạn database project (dự án cơ sở dữ liệu) của SQL Server, xem [Database project của SQL Server](/vi/db-test/docs/sql-server-database-projects/) và [viết nguồn schema](/vi/db-test/docs/extending/schema-source/).
+
+## Trỏ vào một thư mục
+
+Trong class `DbTestBase`, override `SchemaRoot`. Đường dẫn tương đối được resolve theo thư mục của test binary.
+
+{/* not in upstream: illustrative */}
+
+```csharp
+protected override string SchemaRoot => "Schema/postgres";
+```
+
+Hoặc khởi động harness trực tiếp:
+
+<Code code={schemaStartAsync} lang="csharp" />
+
+:::caution
+`DbTestHarness.StartAsync` resolve `schemaRoot` tương đối theo **thư mục hiện tại**, không phải thư mục của test binary. Chỉ `SchemaRoot` trong `DbTestBase` (và `DbTestRun.GetHarnessAsync`) mới resolve theo thư mục binary. Hãy truyền đường dẫn tuyệt đối, hoặc dựng từ `AppContext.BaseDirectory`, khi bạn tự gọi `StartAsync`.
+:::
+
+Copy các file vào cạnh test binary để `SchemaRoot` tương đối hoạt động:
+
+<Code code={schemaCopyToOutput} lang="xml" />
+
+## Phát hiện và thứ tự
+
+Các file có đuôi `.sql` hoặc `.psql` được tìm đệ quy, bất kể engine nào.
+
+Chúng được sắp theo đường dẫn tương đối, so sánh không phân biệt hoa thường. `001_tables.sql` chạy trước `002_procedures.sql`, nên hãy dùng số 0 đứng đầu: `10_x.sql` được xếp trước `2_x.sql`.
+
+:::tip
+File tham chiếu đến một object do file trước tạo ra thì phải đứng sau. Nếu không có quy tắc thứ tự, thư mục `procedures/` sẽ chạy trước `tables/`. Dùng `OrderedDirectories` bên dưới để sửa việc đó.
+:::
+
+## Cách mỗi engine áp dụng file
+
+<Tabs syncKey="engine">
+  <TabItem label="SQL Server">
+    - **Ký hiệu ngăn batch:** `GO`, một chỉ thị phía client mà server từ chối. Nó phải là token duy nhất trên dòng, không phân biệt hoa thường, có thể thụt lề, kèm số lần lặp tùy chọn (`GO 3` gửi batch ba lần) và comment `--` tùy chọn.
+    - **Thân function:** `CREATE PROCEDURE`.
+    - **Cách áp dụng:** mỗi đoạn `GO` là một batch. Batch được gửi nguyên vẹn, không tách theo dấu chấm phẩy, nhờ đó thân `CREATE PROCEDURE` không bị cắt.
+  </TabItem>
+  <TabItem label="PostgreSQL">
+    - **Ký hiệu ngăn batch:** không có.
+    - **Thân function:** `$$ ... $$`.
+    - **Cách áp dụng:** cả file là một command, nhờ đó mọi thân `$$ ... $$` đều nguyên vẹn.
+  </TabItem>
+  <TabItem label="MySQL">
+    - **Ký hiệu ngăn batch:** chỉ thị `DELIMITER`.
+    - **Thân function:** `BEGIN ... END`.
+    - **Cách áp dụng:** mỗi delimiter là một statement, gửi đi mà không kèm delimiter.
+  </TabItem>
+</Tabs>
+
+Bộ tách của SQL Server và MySQL là scanner thực sự, không phải so khớp theo dòng. Một `GO` hoặc delimiter nằm trong chuỗi literal, identifier có dấu ngoặc hay comment thì không bao giờ là dấu ngăn, và một cột tên `delimiter_char` không phải là chỉ thị `DELIMITER`.
+
+Comment ở lại trong command chứa nó. Đoạn đuôi chỉ gồm comment và khoảng trắng sẽ bị bỏ, vì MySQL từ chối query rỗng.
+
+## Loại trừ và sắp thứ tự file
+
+`SchemaLoadOptions` điều khiển việc phát hiện file. Override `SchemaLoadOptions` trong class `DbTestBase`, hoặc truyền nó vào harness.
+
+| Option | Tác dụng |
+|---|---|
+| `ExcludedDirectories` | Tên thư mục mà mọi file bên trong bị bỏ qua hoàn toàn. So khớp không phân biệt hoa thường với từng đoạn thư mục của đường dẫn tương đối. |
+| `ExcludedFileNamePatterns` | Regular expression so khớp với tên file, không phân biệt hoa thường. Khớp thì file bị loại. Pattern chạy quá một giây sẽ ném exception. |
+| `OrderedDirectories` | Các thư mục, tính từ schema root, được áp dụng đúng theo thứ tự này trước mọi file khác. Một thư mục bao gồm cả thư mục con của nó. |
+
+File bị loại trừ luôn được **báo cáo**, không bao giờ âm thầm bị bỏ:
+
+<Code code={schemaLoaderSample} lang="csharp" />
+
+`Reason` là `directory-excluded` hoặc `filename-excluded`. `load.Scripts` chứa những gì sẽ được áp dụng, theo thứ tự.
+
+`SchemaLoader.Load` ném `DirectoryNotFoundException` khi thư mục gốc không tồn tại.
+
+:::note
+`SchemaLoader.Load` cũng dùng đường dẫn tương đối theo thư mục hiện tại. Trong test, hãy truyền đường dẫn tuyệt đối.
+:::
+
+## Khi một script bị lỗi
+
+Schema chỉ áp dụng được một phần sẽ lộ ra sau đó dưới dạng các test fail không liên quan. db-test chọn fail ngay và rõ ràng ở bước setup.
+
+Một file lỗi không dừng quá trình áp dụng: mọi file đều được thử, và `StartAsync` ném `SchemaApplyException` liệt kê từng file lỗi cùng lỗi mà engine báo. Property `Failures` của exception chứa từng lỗi dưới dạng `SchemaApplyFailure` với `RelativePath` và `Error`.
+
+## Tiếp theo
+
+- [Shape guard](/vi/db-test/docs/shape-guard/): thứ bảo vệ schema sau khi đã áp dụng.
+- [Dọn dữ liệu](/vi/db-test/docs/cleanup/): làm trống table giữa các test.

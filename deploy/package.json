@@ -1,0 +1,10 @@
+{
+  "name": "dbaitest-site-deploy",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Deploy-only toolchain: wrangler and nothing else. Installed with --ignore-scripts in the jobs that hold the Cloudflare token, so the site's build dependencies never run next to it.",
+  "license": "MIT",
+  "dependencies": {
+    "wrangler": "4.156.0"
+  }
+}

@@ -1,0 +1,16 @@
+// Assets-only Cloudflare Worker serving the built site (no Worker script, so no invocations).
+// No "routes": dbaitest.com is attached as a Custom Domain in the dashboard at launch, which
+// keeps the deploy token free of zone permissions. workers.dev and preview URLs stay off, so
+// the Worker has no public hostname until then.
+{
+  "$schema": "./deploy/node_modules/wrangler/config-schema.json",
+  "name": "dbaitest-site",
+  "compatibility_date": "2026-10-29",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}

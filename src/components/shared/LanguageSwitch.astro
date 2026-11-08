@@ -1,0 +1,18 @@
+---
+// Link to the same page in the other locale.
+import { siteStrings } from '../../i18n/hub-strings';
+import { localePath, otherLocale, type Locale } from './site';
+
+interface Props {
+  locale: Locale;
+  /** Locale-independent page path, with leading and trailing slash. */
+  path: string;
+}
+
+const { locale, path } = Astro.props;
+const target = otherLocale(locale);
+---
+
+<nav aria-label={siteStrings[locale].languageLabel}>
+  <a href={localePath(target, path)} hreflang={target} lang={target}>{siteStrings[target].languageName}</a>
+</nav>

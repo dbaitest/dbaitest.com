@@ -1,0 +1,7 @@
+{
+  "db-test": {
+    "repo": "dbaitest/db-test",
+    "ref": "v0.3.0",
+    "nuget": "DbTest.MSTest"
+  }
+}

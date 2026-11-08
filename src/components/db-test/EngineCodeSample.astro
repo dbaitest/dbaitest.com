@@ -1,0 +1,35 @@
+---
+// The README's three-engine sample and its once-per-project setup block, both extracted at build
+// time so they always match the pinned release. The setup block is what removes the containers.
+import CodeBlock from '../shared/CodeBlock.astro';
+import { dbTestLandingStrings } from '../../i18n/db-test-landing-strings';
+import { engineSample, runSetupSample } from '../../lib/upstream-snippets';
+import type { Locale } from '../shared/site';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = dbTestLandingStrings[locale];
+---
+
+<section class="section sample" aria-labelledby="sample-title">
+  <div class="container">
+    <div class="section__head">
+      <h2 id="sample-title">{t.sampleHeading}</h2>
+      <p>{t.sampleIntro}</p>
+    </div>
+    <CodeBlock locale={locale} id="engine-sample" code={engineSample} lang="csharp" caption="C#" regionLabel={t.sampleRegion} />
+    <p class="sample__setup">{t.runSetupCaption}</p>
+    <CodeBlock locale={locale} id="run-setup-sample" code={runSetupSample} lang="csharp" caption="C#" regionLabel={t.runSetupRegion} />
+  </div>
+</section>
+
+<style>
+  .sample__setup {
+    margin-block: 1.5rem 0.75rem;
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+</style>

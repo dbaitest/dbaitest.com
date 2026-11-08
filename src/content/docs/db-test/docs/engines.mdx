@@ -1,0 +1,101 @@
+---
+title: Engines
+description: The SQL Server, PostgreSQL and MySQL engines in db-test - packages, default images and logins, container options and how the engines differ.
+---
+
+import { TabItem, Tabs } from '@astrojs/starlight/components';
+
+An engine is the one place db-test knows a database product. Test code never mentions it: the engine sits behind the abstract class `DbEngine`.
+
+## The built-in engines
+
+| | SQL Server | PostgreSQL | MySQL |
+|---|---|---|---|
+| Package | `DbTest.MsSql` | `DbTest.PostgreSql` | `DbTest.MySql` |
+| Class | `MsSqlEngine` | `PostgreSqlEngine` | `MySqlEngine` |
+| Namespace | `DbTest.MsSql` | `DbTest.PostgreSql` | `DbTest.MySql` |
+| Name (CLI, reports) | `mssql` | `postgres` | `mysql` |
+| Default image | `mcr.microsoft.com/mssql/server:2022-latest` | `postgres:16-alpine` | `mysql:8.4` |
+| Login | always `sa` | `dbtest` | `dbtest` |
+
+Each engine also exposes its image as a constant: `MsSqlEngine.DefaultContainerImage`, `PostgreSqlEngine.DefaultContainerImage` and `MySqlEngine.DefaultContainerImage`.
+
+<Tabs syncKey="engine">
+  <TabItem label="SQL Server">
+    {/* not in upstream: illustrative */}
+
+    ```csharp
+    protected override DbEngine CreateEngine() => new MsSqlEngine();
+    ```
+  </TabItem>
+  <TabItem label="PostgreSQL">
+    {/* not in upstream: illustrative */}
+
+    ```csharp
+    protected override DbEngine CreateEngine() => new PostgreSqlEngine();
+    ```
+  </TabItem>
+  <TabItem label="MySQL">
+    {/* not in upstream: illustrative */}
+
+    ```csharp
+    protected override DbEngine CreateEngine() => new MySqlEngine();
+    ```
+  </TabItem>
+</Tabs>
+
+## Container options
+
+Override `ContainerOptions` in a `DbTestBase` class, or pass a `DbContainerOptions` to `DbTestHarness.StartAsync`. Every property has a default, so `null` means the engine defaults.
+
+| Property | Default | Meaning |
+|---|---|---|
+| `Image` | the engine's `DefaultImage` | Container image. |
+| `Database` | `dbtest` | Database name created inside the container. |
+| `Username` | the engine's own | Login inside the container. |
+| `Password` | the engine's own | Password inside the container. |
+| `StartupTimeout` | 3 minutes | How long to wait for the container to accept connections. |
+| `Environment` | empty | Extra environment variables passed to the container. |
+
+{/* not in upstream: illustrative */}
+
+```csharp
+[TestClass]
+public sealed class PostgresCustomerTests : CustomerTests
+{
+    protected override DbEngine CreateEngine() => new PostgreSqlEngine();
+    protected override string SchemaRoot => "Schema/postgres";
+
+    protected override DbContainerOptions? ContainerOptions => new()
+    {
+        Image = "postgres:17-alpine",
+    };
+}
+```
+
+:::caution[SQL Server login and password]
+The SQL Server container always logs in as `sa` and has no way to change it: any other `Username` throws an `ArgumentException`.
+
+SQL Server also enforces a password policy at startup, and a simple password fails the container before it accepts a connection, not at first login. The engine owns a policy-compliant default, so leave `Password` unset unless you need to choose one.
+:::
+
+Test classes share a container only when everything that identifies it is equal: the engine, image, database, login, password, environment and the schema. A class with different container options gets its own container.
+
+## Command timeout
+
+Every command an engine runs gets the engine's `CommandTimeout`, two minutes by default. It is a virtual property on `DbEngine`.
+
+## How the engines differ
+
+The three databases disagree on almost everything, and each disagreement used to be a special case in test code. db-test handles them inside the engine.
+
+| Concern | SQL Server | PostgreSQL | MySQL |
+|---|---|---|---|
+| Batch separator | `GO` | none | `DELIMITER` |
+| Function body | `CREATE PROCEDURE` | `$$ ... $$` | `BEGIN ... END` |
+| Empty a table | `TRUNCATE`, or `DELETE` with constraints disabled when a foreign key references it | `TRUNCATE ... RESTART IDENTITY CASCADE` | `TRUNCATE` with `FOREIGN_KEY_CHECKS` off |
+| Introspect objects | `sys.objects`, `sys.columns` | `pg_class`, `pg_attribute`, `pg_proc` | `information_schema` |
+
+How schema files are split is covered in [the schema](/db-test/docs/schema/), and how tables are emptied in [cleanup](/db-test/docs/cleanup/).
+
+Need another database? [Write an engine](/db-test/docs/extending/engine/).

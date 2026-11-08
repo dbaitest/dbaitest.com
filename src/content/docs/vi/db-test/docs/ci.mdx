@@ -1,0 +1,27 @@
+---
+title: Tích hợp liên tục
+description: Chạy kiểm thử tích hợp db-test trong GitHub Actions, mỗi database engine một job, với thời gian chạy từng test được upload làm artifact.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import { integrationJob } from '../../../../../lib/upstream-snippets';
+
+CI của chính db-test chạy bộ kiểm thử tích hợp trên cả ba engine. Đây là job đó, đúng như trong repository. Hãy điều chỉnh cho project của bạn.
+
+<Code code={integrationJob} lang="yaml" title=".github/workflows/ci.yml" />
+
+## Rút ra điều gì từ nó
+
+**Mỗi engine một job.** Bộ test khởi động một container cho mỗi engine. Chạy các engine thành các nhánh matrix riêng, với `fail-fast: false`, giúp lỗi của một engine không che mất kết quả của các engine khác.
+
+**Docker lấy từ runner.** Job không có bước cài Docker: nó dựa vào Docker daemon có sẵn trên runner `ubuntu-latest`, và Testcontainers giao tiếp với daemon đó.
+
+**Chọn nhánh theo tên class.** Giá trị matrix là một phần của tên test class, và `--filter "FullyQualifiedName~${{ matrix.engine }}HarnessTests"` chỉ chạy các class của engine đó: `MsSqlHarnessTests`, `PostgreSqlHarnessTests` hoặc `MySqlHarnessTests`. Hãy đặt tên các class theo từng engine của bạn theo mẫu tương tự để lọc theo cách đó.
+
+**Mỗi runtime một bước.** Các package có asset `net8.0` và `net10.0`. Job test cả hai bằng `--framework`, trong cùng một job để image database chỉ được pull một lần, và cài cả hai runtime bằng `actions/setup-dotnet`.
+
+**Thời gian chạy làm artifact.** `DBTEST_TIMING: "1"` bật [file thời gian chạy từng test](/vi/db-test/docs/diagnostics/). Bước cuối upload file đó cho từng engine, với `if: always()` để lần chạy bị fail vẫn báo cáo thời gian.
+
+:::tip
+Ghim các action của bên thứ ba vào full commit SHA, như workflow này làm, kèm release tag trong comment. Tag có thể bị di chuyển, SHA thì không.
+:::

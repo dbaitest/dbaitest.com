@@ -1,0 +1,73 @@
+---
+title: Queries
+description: Run statements and read scalar results with the db-test harness, with parameters and cross-driver type conversion.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import { openConnectionCall, scalarQueries } from '../../../../lib/upstream-snippets';
+
+The harness runs plain SQL. It never makes you reference `SqlParameter`, `NpgsqlParameter` or `MySqlParameter`.
+
+## Scalar queries
+
+<Code code={scalarQueries} lang="csharp" />
+
+`QueryScalarAsync<T>` reads the first column of the first row. SQL `NULL` or no row gives `default`.
+
+It absorbs the drivers' differences:
+
+- `COUNT(*)` is `int` on SQL Server and `bigint` elsewhere, and still converts to `int`.
+- MySQL returns a `CHAR(36)` where SQL Server returns a `uniqueidentifier`, and both convert to `Guid`.
+- A `DateTime` converts to `DateTimeOffset`.
+- Nullable targets such as `int?` work.
+
+## Statements
+
+`ExecuteAsync` runs one statement and returns the number of rows it affected:
+
+{/* not in upstream: illustrative */}
+
+```csharp
+var rows = await harness.ExecuteAsync(
+    "DELETE FROM orders WHERE placed_at < @cutoff",
+    [new DbParameterValue("@cutoff", DateTime.UtcNow.AddDays(-30))]);
+```
+
+## Parameters
+
+Pass parameters as a list of `DbParameterValue`. The name is as it appears in the SQL, for example `@email`. All three drivers also accept the name without the `@` prefix.
+
+{/* not in upstream: illustrative */}
+
+```csharp
+var count = await harness.QueryScalarAsync<int>(
+    "SELECT COUNT(*) FROM customers WHERE email = @email",
+    [new DbParameterValue("@email", "ada@example.test")]);
+```
+
+A `null` value is sent as SQL `NULL`.
+
+`DbParameterValue` lives in the `DbTest.Core.Engine` namespace.
+
+## Anything richer
+
+For a reader, a stored procedure call or driver-specific features, open a connection:
+
+<Code code={openConnectionCall} lang="csharp" />
+
+Each helper opens and closes its own connection. `OpenConnectionAsync()` returns an open connection that you dispose. `CreateConnection()` returns one that is not opened yet.
+
+To run several steps on one connection, use `ExecuteOnConnectionAsync`. The connection is closed afterwards:
+
+{/* not in upstream: illustrative */}
+
+```csharp
+await harness.ExecuteOnConnectionAsync(async connection =>
+{
+    // work with the open connection here
+});
+```
+
+## Reading the catalog
+
+`harness.ListObjectsAsync()` lists every table, view and routine as the [shape guard](/db-test/docs/shape-guard/) sees them: a `SchemaObject` with a schema name, name, kind and ordered column names.

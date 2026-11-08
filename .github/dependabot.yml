@@ -1,0 +1,45 @@
+# Keeps the site's npm packages, the deploy-only wrangler package and the SHA-pinned GitHub
+# Actions up to date. Updates are grouped so a week of bumps arrives as one pull request per
+# group, and a release has to be seven days old before it is proposed, so a compromised
+# version is usually yanked before it reaches the build. Security updates are not grouped
+# and are not held back.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build(deps)
+    groups:
+      # Starlight is pre-1.0: Astro, Starlight and its plugins move together and are
+      # proven together by site-build in one pull request.
+      astro:
+        patterns: ["astro", "@astrojs/*", "starlight-*"]
+      tooling:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /deploy
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build(deps)
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci(deps)
+    groups:
+      actions:
+        patterns: ["*"]

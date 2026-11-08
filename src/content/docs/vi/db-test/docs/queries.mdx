@@ -1,0 +1,73 @@
+---
+title: Truy vấn
+description: Chạy statement và đọc kết quả scalar bằng harness của db-test, với tham số và chuyển đổi kiểu giữa các driver.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import { openConnectionCall, scalarQueries } from '../../../../../lib/upstream-snippets';
+
+Harness chạy SQL thuần. Bạn không bao giờ phải tham chiếu `SqlParameter`, `NpgsqlParameter` hay `MySqlParameter`.
+
+## Truy vấn scalar
+
+<Code code={scalarQueries} lang="csharp" />
+
+`QueryScalarAsync<T>` đọc cột đầu tiên của dòng đầu tiên. SQL `NULL` hoặc không có dòng nào cho ra `default`.
+
+Nó hấp thụ sự khác biệt giữa các driver:
+
+- `COUNT(*)` là `int` trên SQL Server và `bigint` ở nơi khác, và vẫn chuyển được sang `int`.
+- MySQL trả về `CHAR(36)` còn SQL Server trả về `uniqueidentifier`, và cả hai đều chuyển được sang `Guid`.
+- `DateTime` chuyển được sang `DateTimeOffset`.
+- Kiểu đích nullable như `int?` hoạt động bình thường.
+
+## Statement
+
+`ExecuteAsync` chạy một statement và trả về số dòng bị ảnh hưởng:
+
+{/* not in upstream: illustrative */}
+
+```csharp
+var rows = await harness.ExecuteAsync(
+    "DELETE FROM orders WHERE placed_at < @cutoff",
+    [new DbParameterValue("@cutoff", DateTime.UtcNow.AddDays(-30))]);
+```
+
+## Tham số
+
+Truyền tham số dưới dạng danh sách `DbParameterValue`. Tên viết đúng như trong SQL, ví dụ `@email`. Cả ba driver cũng chấp nhận tên không có tiền tố `@`.
+
+{/* not in upstream: illustrative */}
+
+```csharp
+var count = await harness.QueryScalarAsync<int>(
+    "SELECT COUNT(*) FROM customers WHERE email = @email",
+    [new DbParameterValue("@email", "ada@example.test")]);
+```
+
+Giá trị `null` được gửi đi dưới dạng SQL `NULL`.
+
+`DbParameterValue` nằm trong namespace `DbTest.Core.Engine`.
+
+## Những nhu cầu phức tạp hơn
+
+Với reader, lời gọi stored procedure hoặc tính năng riêng của driver, hãy mở một connection:
+
+<Code code={openConnectionCall} lang="csharp" />
+
+Mỗi helper tự mở và đóng connection của nó. `OpenConnectionAsync()` trả về một connection đã mở mà bạn tự dispose. `CreateConnection()` trả về connection chưa được mở.
+
+Để chạy nhiều bước trên cùng một connection, dùng `ExecuteOnConnectionAsync`. Connection được đóng sau đó:
+
+{/* not in upstream: illustrative */}
+
+```csharp
+await harness.ExecuteOnConnectionAsync(async connection =>
+{
+    // work with the open connection here
+});
+```
+
+## Đọc catalog
+
+`harness.ListObjectsAsync()` liệt kê mọi table, view và routine đúng như [shape guard](/vi/db-test/docs/shape-guard/) (bộ canh hình dạng schema) nhìn thấy: một `SchemaObject` gồm tên schema, tên, loại và tên các cột theo thứ tự.

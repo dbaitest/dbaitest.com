@@ -22,3 +22,6 @@ plans/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Local agent memory written by review/test tooling
+.claude/agent-memory/

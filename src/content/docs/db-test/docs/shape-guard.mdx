@@ -1,0 +1,66 @@
+---
+title: Shape guard
+description: How the db-test shape guard fails the test that dropped or re-typed a shared database object, naming the object and the change.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import { shapeGuardCheck, shapeGuardMessage } from '../../../../lib/upstream-snippets';
+
+A shared container means a shared schema. A test that drops or re-types a table leaves the next test failing for the wrong reason, and the failure points at the victim, not the culprit.
+
+The shape guard fixes the blame.
+
+## How it works
+
+The guard snapshots every table, view and routine after the schema is applied. `DbTestBase` re-reads them after every test, and fails the test that changed one.
+
+<Code code={shapeGuardMessage} lang="text" />
+
+The check runs after the test, and after any `[TestCleanup]` of your derived class, so a test that cleans up after itself passes.
+
+## What it detects
+
+For each object in the snapshot, the guard reports one of:
+
+| Change | Message |
+|---|---|
+| The object is gone | `dropped` |
+| Its kind changed, for example a table became a view | `re-typed (Table -> View)` |
+| Its columns changed, by name or order | `columns changed (before) -> (after)` |
+
+Objects a test creates are not watched, only the schema as applied.
+
+## Who is blamed
+
+The culprit is blamed once. The tests after it are not, because they only inherited the damage.
+
+An object that is put back is forgotten, so the next test to break it is blamed again.
+
+## It detects, it does not repair
+
+A silent repair hides the leak from the next run, and the next run is exactly when you want to see it. The guard names the object and the test, and leaves the fix to you.
+
+To only log the leak, override `FailOnShapeLeak`. The report is then written to the test output and the test passes:
+
+{/* not in upstream: illustrative */}
+
+```csharp
+protected override bool FailOnShapeLeak => false;
+```
+
+## Without the base class
+
+Call the check yourself on a harness:
+
+<Code code={shapeGuardCheck} lang="csharp" />
+
+It returns the leaks first detected by this check, and an empty list when the schema is intact. The harness also exposes the guard itself as `harness.Guard`.
+
+:::note
+The guard exists when a schema was applied that produced at least one object. A harness started without a schema has no guard, and `CheckShapeAsync` returns an empty list.
+:::
+
+## Next
+
+- [Cleanup](/db-test/docs/cleanup/): empty the data, not the shape.
+- [Troubleshooting](/db-test/docs/troubleshooting/).

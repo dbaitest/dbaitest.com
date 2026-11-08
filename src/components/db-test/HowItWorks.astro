@@ -1,0 +1,59 @@
+---
+import { dbTestLandingStrings } from '../../i18n/db-test-landing-strings';
+import type { Locale } from '../shared/site';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = dbTestLandingStrings[locale];
+---
+
+<section class="section" aria-labelledby="steps-title">
+  <div class="container">
+    <div class="section__head">
+      <h2 id="steps-title">{t.stepsHeading}</h2>
+    </div>
+    <ol class="steps">
+      {
+        t.steps.map((step) => (
+          <li class="step">
+            <h3>{step.title}</h3>
+            <p>{step.body}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: 1.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+  }
+  .step {
+    counter-increment: step;
+    padding-top: 1rem;
+    border-top: 2px solid var(--sl-color-text-accent);
+  }
+  .step::before {
+    content: counter(step, decimal-leading-zero);
+    display: block;
+    margin-bottom: 0.5rem;
+    font-family: var(--landing-mono);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--sl-color-text-accent);
+  }
+  .step h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.125rem;
+  }
+</style>

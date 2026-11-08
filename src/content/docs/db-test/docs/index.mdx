@@ -1,0 +1,66 @@
+---
+title: db-test
+description: Database integration tests for .NET that run the same test body against SQL Server, PostgreSQL and MySQL, each in a throwaway container.
+---
+
+import { Code, TabItem, Tabs } from '@astrojs/starlight/components';
+import { customerTestsClass, engineTestClasses } from '../../../../lib/upstream-snippets';
+
+db-test is a .NET library for **database integration testing**. You write a test body once and run it against **SQL Server, PostgreSQL and MySQL**.
+
+Every run gets a throwaway database container. Nothing touches a shared, staging or production database.
+
+## What a test looks like
+
+The tests live in an abstract class. No engine name appears in them.
+
+<Code code={customerTestsClass} lang="csharp" />
+
+One small class per engine says which engine to use and where its schema lives:
+
+<Tabs syncKey="engine">
+  <TabItem label="SQL Server">
+    <Code code={engineTestClasses.mssql} lang="csharp" />
+  </TabItem>
+  <TabItem label="PostgreSQL">
+    <Code code={engineTestClasses.postgres} lang="csharp" />
+  </TabItem>
+  <TabItem label="MySQL">
+    <Code code={engineTestClasses.mysql} lang="csharp" />
+  </TabItem>
+</Tabs>
+
+The [getting started](/db-test/docs/getting-started/) guide builds this up step by step.
+
+## Why
+
+A database test suite has to solve the same handful of problems, and most teams solve them by hand.
+
+| Problem | What db-test does |
+|---|---|
+| Where does the test database come from? | A throwaway container per engine, started on first use and shared by the run. |
+| How does the schema get there? | Schema files on disk, applied in order, with each engine's own splitting rules. |
+| A test dropped a column and the next test failed on it | The [shape guard](/db-test/docs/shape-guard/) fails the test that did it, naming the object and the change. |
+| One test's rows leaked into the next | [`CleanAsync()`](/db-test/docs/cleanup/) empties every table whatever the foreign keys, and resets identity counters. |
+| "The suite is slow" | [Per-test timings](/db-test/docs/diagnostics/) in a TSV file (`DBTEST_TIMING=1`). |
+| The same assertions written three times | The engine sits behind one abstract class. |
+
+## Packages
+
+| Package | Purpose |
+|---|---|
+| `DbTest.Core` | The engine-agnostic harness, without any test framework. |
+| `DbTest.MSTest` | `DbTestBase` and `DbTestRun` for MSTest. Brings `DbTest.Core`. |
+| `DbTest.MsSql` | The SQL Server engine. |
+| `DbTest.PostgreSql` | The PostgreSQL engine. |
+| `DbTest.MySql` | The MySQL engine. |
+| `DbTest.MsSql.Dacpac` | Deploys a SQL Server `.dacpac` as the schema. |
+| `DbTest.Cli` | The `dbtest` command-line tool. |
+
+## Where to go next
+
+- [Getting started](/db-test/docs/getting-started/): install, requirements and a first test.
+- [Engines](/db-test/docs/engines/): what each engine runs and how to configure its container.
+- [The schema](/db-test/docs/schema/): how SQL files are discovered, ordered and applied.
+- [SQL Server database projects](/db-test/docs/sql-server-database-projects/): test a `.sqlproj` through its `.dacpac`.
+- [Extending db-test](/db-test/docs/extending/engine/): write your own engine or schema source.

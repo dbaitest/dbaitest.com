@@ -1,0 +1,91 @@
+---
+title: Viết một engine
+description: Thêm một cơ sở dữ liệu vào db-test bằng cách kế thừa DbEngine và hiện thực bảy member.
+---
+
+Kế thừa `DbEngine` và hiện thực bảy member. Việc áp dụng schema, chạy statement, bind tham số và chuyển đổi scalar đều được thừa hưởng, cũng như việc tìm file schema, sắp thứ tự, loại trừ và [shape guard](/vi/db-test/docs/shape-guard/) (bộ canh hình dạng schema).
+
+`DbEngine` là abstract class chứ không phải interface, để các khả năng mới có thể xuất hiện dưới dạng virtual member có sẵn mặc định, mà không làm hỏng engine được viết bên ngoài repository db-test.
+
+## Bảy member
+
+| Member | Nó làm gì |
+|---|---|
+| `Name` | Tên ngắn của engine, dùng trong báo cáo và đối số CLI (ví dụ `mssql`). |
+| `DefaultImage` | Container image mà engine chạy theo mặc định. |
+| `CreateConnection(connectionString)` | Tạo một `DbConnection` cho connection string. Chưa được mở. |
+| `StartContainerAsync(options, cancellationToken)` | Khởi động một container dùng một lần và trả về `IDbContainerHandle`. Phải tôn trọng `DbContainerOptions.StartupTimeout`. |
+| `ListObjectsAsync(connection, cancellationToken)` | Liệt kê các object mà harness nhìn thấy: table, view và routine, dưới dạng `SchemaObject`. Dùng cho shape guard và báo cáo. |
+| `CleanAsync(connection, cancellationToken)` | Làm trống mọi user table và đặt bộ đếm identity về seed, bất kể foreign key. |
+| `SplitScript(script)` | Protected. Tách một file schema thành các command mà server chấp nhận, theo thứ tự. |
+
+{/* not in upstream: illustrative */}
+
+```csharp
+public sealed class MyEngine : DbEngine
+{
+    public override string Name => "myengine";
+
+    public override string DefaultImage => "registry.example/my-database:1";
+
+    public override DbConnection CreateConnection(string connectionString) =>
+        new MyDatabaseConnection(connectionString);
+
+    public override Task<IDbContainerHandle> StartContainerAsync(
+        DbContainerOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        // Start the container with the options' image, database, login and environment, wait until
+        // it accepts connections, and return a handle whose Dispose removes it.
+    }
+
+    public override Task<IReadOnlyList<SchemaObject>> ListObjectsAsync(
+        DbConnection connection,
+        CancellationToken cancellationToken = default)
+    {
+        // Read the catalog: one SchemaObject per table, view and routine, columns in ordinal order.
+    }
+
+    public override Task CleanAsync(DbConnection connection, CancellationToken cancellationToken = default)
+    {
+        // Empty every user table and reset identities, whatever the foreign keys.
+    }
+
+    protected override IReadOnlyList<string> SplitScript(SchemaScript script)
+    {
+        // Turn the file in script.Content into the commands the server accepts.
+    }
+}
+```
+
+Đoạn code trên chỉ là bộ khung: `MyDatabaseConnection` đại diện cho `DbConnection` của driver bạn dùng, và mỗi phần thân là hợp đồng cần thỏa, không phải hiện thực.
+
+## Các helper được thừa hưởng
+
+| Helper | Cách dùng |
+|---|---|
+| `CreateStartupToken(options, cancellationToken)` | Một token bị hủy khi caller hủy hoặc khi `StartupTimeout` hết hạn. Hãy dispose source. |
+| `ReadRowsAsync(connection, sql, onRow, cancellationToken)` | Chạy một query và đưa từng dòng cho callback. Dùng để đọc các catalog view. |
+| `SchemaObjectCollector` | Gom các dòng catalog đến từng cột một thành các giá trị `SchemaObject`. |
+| `SqlStatementSplitter.SplitOnGo`, `SplitRespectingDelimiter` | Các scanner mà engine SQL Server và MySQL dùng. Engine kiểu PostgreSQL gửi nguyên cả file. |
+| `CommandTimeout` | Virtual, mặc định hai phút. Áp dụng cho mọi command. |
+
+## Sử dụng
+
+Truyền engine từ `CreateEngine()` trong test class, giống như các engine có sẵn.
+
+Để CLI biết đến nó, đăng ký theo tên với `EngineRegistry` tĩnh:
+
+{/* not in upstream: illustrative */}
+
+```csharp
+EngineRegistry.Register("myengine", () => new MyEngine());
+```
+
+Core assembly cố ý không tham chiếu package engine nào, nên việc ánh xạ từ tên sang hiện thực nằm ở ứng dụng sở hữu các package engine. Công cụ `dbtest` chỉ đăng ký ba engine có sẵn của nó.
+
+## Những điều đáng biết
+
+Mỗi engine trong ba engine có sẵn đều gặp những hành vi riêng đã tốn nhiều thời gian debug thật sự. [Xử lý sự cố](/vi/db-test/docs/troubleshooting/#các-hành-vi-của-engine-đã-được-xử-lý-sẵn) liệt kê chúng, và nên đọc trước khi viết thêm một engine.
+
+Nếu engine của bạn cần một schema không phải thư mục file SQL, hãy [viết một nguồn schema](/vi/db-test/docs/extending/schema-source/) thay vào đó.

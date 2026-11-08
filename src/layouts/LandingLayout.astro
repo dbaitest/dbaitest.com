@@ -1,0 +1,92 @@
+---
+// Document shell for the hub and the product landing pages: head metadata (canonical,
+// hreflang, Open Graph), the theme bootstrap, the header and the shared design tokens.
+// Pages supply <main id="main"> and the footer through the default slot.
+import '../styles/brand.css';
+import '../styles/landing.css';
+import { LOCALES, SITE_ORIGIN, absoluteUrl, localePath, type Link, type Locale } from '../components/shared/site';
+import { siteStrings } from '../i18n/hub-strings';
+
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+  /** Locale-independent page path, with leading and trailing slash (`/`, `/db-test/`). */
+  path: string;
+  ogImage: string;
+  ogImageAlt: string;
+  nav?: Link[];
+}
+
+const { locale, title, description, path, ogImage, ogImageAlt, nav = [] } = Astro.props;
+const strings = siteStrings[locale];
+const canonical = absoluteUrl(locale, path);
+const image = `${SITE_ORIGIN}${ogImage}`;
+const ogLocale = { en: 'en_US', vi: 'vi_VN' } as const;
+---
+
+<!doctype html>
+<html lang={locale} class="landing">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="canonical" href={canonical} />
+    {LOCALES.map((l) => <link rel="alternate" hreflang={l} href={absoluteUrl(l, path)} />)}
+    <link rel="alternate" hreflang="x-default" href={absoluteUrl('en', path)} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="dbaitest" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={ogLocale[locale]} />
+    {LOCALES.filter((l) => l !== locale).map((l) => <meta property="og:locale:alternate" content={ogLocale[l]} />)}
+    <meta property="og:image" content={image} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogImageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
+    <!-- Same theme choice as Starlight's docs: the stored toggle value, else the OS setting. Hashed by the CSP. -->
+    <script is:inline>
+      (() => {
+        let theme = null;
+        try {
+          theme = localStorage.getItem('starlight-theme');
+        } catch {}
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{strings.skipToContent}</a>
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <a class="wordmark" href={localePath(locale, '/')}>dbaitest</a>
+        {
+          nav.length > 0 && (
+            <nav aria-label={strings.navLabel}>
+              <ul class="site-nav">
+                {nav.map((item) => (
+                  <li>
+                    <a href={item.href}>{item.label}</a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )
+        }
+      </div>
+    </header>
+    <slot />
+  </body>
+</html>

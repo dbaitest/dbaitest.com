@@ -1,0 +1,91 @@
+---
+title: Writing an engine
+description: Add a database to db-test by deriving from DbEngine and implementing seven members.
+---
+
+Derive from `DbEngine` and implement seven members. Applying a schema, running statements, binding parameters and converting scalars are inherited, as are schema discovery, ordering, exclusion and the [shape guard](/db-test/docs/shape-guard/).
+
+`DbEngine` is an abstract class rather than an interface, so new capabilities can arrive as virtual members with a default, without breaking an engine written outside the db-test repository.
+
+## The seven members
+
+| Member | What it does |
+|---|---|
+| `Name` | Short engine name, used in reports and CLI arguments (for example `mssql`). |
+| `DefaultImage` | The container image the engine runs by default. |
+| `CreateConnection(connectionString)` | Creates a `DbConnection` for the connection string. It is not opened. |
+| `StartContainerAsync(options, cancellationToken)` | Starts a throwaway container and returns an `IDbContainerHandle`. Honour `DbContainerOptions.StartupTimeout`. |
+| `ListObjectsAsync(connection, cancellationToken)` | Lists the objects the harness can see: tables, views and routines, as `SchemaObject`. Used for shape guarding and reporting. |
+| `CleanAsync(connection, cancellationToken)` | Empties every user table and resets identity counters to their seed, whatever the foreign keys. |
+| `SplitScript(script)` | Protected. Splits one schema file into the commands the server accepts, in order. |
+
+{/* not in upstream: illustrative */}
+
+```csharp
+public sealed class MyEngine : DbEngine
+{
+    public override string Name => "myengine";
+
+    public override string DefaultImage => "registry.example/my-database:1";
+
+    public override DbConnection CreateConnection(string connectionString) =>
+        new MyDatabaseConnection(connectionString);
+
+    public override Task<IDbContainerHandle> StartContainerAsync(
+        DbContainerOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        // Start the container with the options' image, database, login and environment, wait until
+        // it accepts connections, and return a handle whose Dispose removes it.
+    }
+
+    public override Task<IReadOnlyList<SchemaObject>> ListObjectsAsync(
+        DbConnection connection,
+        CancellationToken cancellationToken = default)
+    {
+        // Read the catalog: one SchemaObject per table, view and routine, columns in ordinal order.
+    }
+
+    public override Task CleanAsync(DbConnection connection, CancellationToken cancellationToken = default)
+    {
+        // Empty every user table and reset identities, whatever the foreign keys.
+    }
+
+    protected override IReadOnlyList<string> SplitScript(SchemaScript script)
+    {
+        // Turn the file in script.Content into the commands the server accepts.
+    }
+}
+```
+
+The snippet is a skeleton: `MyDatabaseConnection` stands for your driver's `DbConnection`, and each body is the contract, not an implementation.
+
+## Helpers you inherit
+
+| Helper | Use |
+|---|---|
+| `CreateStartupToken(options, cancellationToken)` | A token that cancels when the caller cancels or `StartupTimeout` elapses. Dispose the source. |
+| `ReadRowsAsync(connection, sql, onRow, cancellationToken)` | Runs a query and hands every row to a callback. For reading catalog views. |
+| `SchemaObjectCollector` | Groups catalog rows that arrive one column at a time into `SchemaObject` values. |
+| `SqlStatementSplitter.SplitOnGo`, `SplitRespectingDelimiter` | The scanners the SQL Server and MySQL engines use. A PostgreSQL-style engine sends the file whole. |
+| `CommandTimeout` | Virtual, two minutes by default. Applied to every command. |
+
+## Use it
+
+Pass the engine from `CreateEngine()` in a test class, as with the built-in ones.
+
+To make the CLI know it, register it by name with the static `EngineRegistry`:
+
+{/* not in upstream: illustrative */}
+
+```csharp
+EngineRegistry.Register("myengine", () => new MyEngine());
+```
+
+The core assembly deliberately references no engine package, so the mapping from a name to an implementation lives with the application that owns the engine packages. The `dbtest` tool registers only its three built-in engines.
+
+## Things worth knowing
+
+The three built-in engines each hit engine behaviour that cost real debugging time. [Troubleshooting](/db-test/docs/troubleshooting/#engine-behaviours-handled-for-you) lists them, and they are worth reading before writing another engine.
+
+If your engine needs a schema that is not a directory of SQL files, [write a schema source](/db-test/docs/extending/schema-source/) instead.

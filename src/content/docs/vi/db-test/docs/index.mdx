@@ -1,0 +1,66 @@
+---
+title: db-test
+description: Kiểm thử tích hợp cơ sở dữ liệu cho .NET, chạy cùng một test body trên SQL Server, PostgreSQL và MySQL, mỗi engine trong một container dùng một lần.
+---
+
+import { Code, TabItem, Tabs } from '@astrojs/starlight/components';
+import { customerTestsClass, engineTestClasses } from '../../../../../lib/upstream-snippets';
+
+db-test là thư viện .NET cho **kiểm thử tích hợp cơ sở dữ liệu**. Bạn viết test body một lần và chạy nó trên **SQL Server, PostgreSQL và MySQL**.
+
+Mỗi lần chạy có một database container dùng một lần. Không có gì chạm vào database dùng chung, staging hay production.
+
+## Một test trông như thế nào
+
+Các test nằm trong một abstract class. Không có tên engine nào xuất hiện trong đó.
+
+<Code code={customerTestsClass} lang="csharp" />
+
+Mỗi engine có một class nhỏ cho biết dùng engine nào và schema nằm ở đâu:
+
+<Tabs syncKey="engine">
+  <TabItem label="SQL Server">
+    <Code code={engineTestClasses.mssql} lang="csharp" />
+  </TabItem>
+  <TabItem label="PostgreSQL">
+    <Code code={engineTestClasses.postgres} lang="csharp" />
+  </TabItem>
+  <TabItem label="MySQL">
+    <Code code={engineTestClasses.mysql} lang="csharp" />
+  </TabItem>
+</Tabs>
+
+Hướng dẫn [bắt đầu nhanh](/vi/db-test/docs/getting-started/) xây dựng ví dụ này từng bước.
+
+## Vì sao cần db-test
+
+Bộ kiểm thử cơ sở dữ liệu nào cũng phải giải quyết cùng một nhóm vấn đề, và hầu hết các team tự giải quyết bằng tay.
+
+| Vấn đề | db-test làm gì |
+|---|---|
+| Database cho test lấy từ đâu? | Một container dùng một lần cho mỗi engine, khởi động ở lần dùng đầu tiên và dùng chung trong cả lần chạy. |
+| Schema được đưa vào bằng cách nào? | Các file schema trên đĩa, áp dụng theo thứ tự, với quy tắc tách script riêng của từng engine. |
+| Một test xóa một cột và test sau đó lỗi vì cột ấy | [Shape guard](/vi/db-test/docs/shape-guard/) (bộ canh hình dạng schema) làm fail đúng test gây ra thay đổi, kèm tên object và thay đổi đó. |
+| Dữ liệu của test này rò sang test sau | [`CleanAsync()`](/vi/db-test/docs/cleanup/) làm trống mọi table bất kể foreign key, và đặt lại bộ đếm identity. |
+| "Bộ test chạy chậm" | [Thời gian chạy từng test](/vi/db-test/docs/diagnostics/) trong file TSV (`DBTEST_TIMING=1`). |
+| Cùng một assertion phải viết ba lần | Engine nằm sau một abstract class duy nhất. |
+
+## Các package
+
+| Package | Mục đích |
+|---|---|
+| `DbTest.Core` | Harness không phụ thuộc engine, không gắn với framework test nào. |
+| `DbTest.MSTest` | `DbTestBase` và `DbTestRun` cho MSTest. Kéo theo `DbTest.Core`. |
+| `DbTest.MsSql` | Engine SQL Server. |
+| `DbTest.PostgreSql` | Engine PostgreSQL. |
+| `DbTest.MySql` | Engine MySQL. |
+| `DbTest.MsSql.Dacpac` | Deploy một `.dacpac` của SQL Server làm schema. |
+| `DbTest.Cli` | Công cụ dòng lệnh `dbtest`. |
+
+## Đọc tiếp
+
+- [Bắt đầu nhanh](/vi/db-test/docs/getting-started/): cài đặt, yêu cầu và test đầu tiên.
+- [Engine](/vi/db-test/docs/engines/): mỗi engine chạy gì và cách cấu hình container của nó.
+- [Schema](/vi/db-test/docs/schema/): cách các file SQL được tìm thấy, sắp thứ tự và áp dụng.
+- [Database project của SQL Server](/vi/db-test/docs/sql-server-database-projects/): kiểm thử một `.sqlproj` thông qua `.dacpac`.
+- [Mở rộng db-test](/vi/db-test/docs/extending/engine/): viết engine hoặc nguồn schema của riêng bạn.

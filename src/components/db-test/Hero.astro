@@ -1,0 +1,105 @@
+---
+// Value proposition, call to action and the install block.
+import { dbTestLandingStrings } from '../../i18n/db-test-landing-strings';
+import type { Locale } from '../shared/site';
+import InstallBlock from './InstallBlock.astro';
+
+interface Props {
+  locale: Locale;
+  ctaHref: string;
+  repoUrl: string;
+  release: string;
+}
+
+const { locale, ctaHref, repoUrl, release } = Astro.props;
+const t = dbTestLandingStrings[locale];
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="container hero__grid">
+    <div class="hero__copy">
+      <p class="eyebrow">{t.eyebrow} <code class="hero__release">{release}</code></p>
+      <h1 id="hero-title">{t.heading}</h1>
+      <p class="hero__lead">{t.lead}</p>
+      <ul class="hero__engines" aria-label={t.enginesLabel}>
+        {
+          t.engines.map((engine) => (
+            <li>
+              <span aria-hidden="true">✓</span> {engine}
+            </li>
+          ))
+        }
+      </ul>
+      <div class="hero__actions">
+        <a class="button button--primary" href={ctaHref}>{t.cta}</a>
+        <a class="button button--ghost" href={repoUrl}>{t.viewOnGitHub}</a>
+      </div>
+      <p class="hero__requirements">{t.requirements}</p>
+    </div>
+    <InstallBlock locale={locale} />
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding-block: clamp(3rem, 8vw, 6rem);
+  }
+  .hero__grid {
+    display: grid;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  @media (min-width: 62rem) {
+    .hero__grid {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 3.5rem;
+    }
+  }
+  .hero__copy {
+    min-width: 0;
+  }
+  .hero h1 {
+    font-size: clamp(2.25rem, 7vw, 3.75rem);
+  }
+  .hero__release {
+    padding: 0.0625rem 0.5rem;
+    border: 1px solid var(--sl-color-text-accent);
+    border-radius: 999px;
+    font-size: 0.75rem;
+  }
+  .hero__lead {
+    margin-top: 1.25rem;
+    font-size: clamp(1.0625rem, 2.5vw, 1.1875rem);
+  }
+  .hero__engines {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .hero__engines li {
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 999px;
+    background: var(--sl-color-bg-surface);
+    color: var(--sl-color-white);
+    font-family: var(--landing-mono);
+    font-size: 0.875rem;
+  }
+  .hero__engines [aria-hidden] {
+    color: var(--sl-color-text-accent);
+  }
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.75rem;
+  }
+  .hero__requirements {
+    margin-top: 1rem;
+    font-size: 0.9375rem;
+    color: var(--sl-color-gray-3);
+  }
+</style>
