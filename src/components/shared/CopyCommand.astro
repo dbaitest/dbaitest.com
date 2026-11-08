@@ -1,0 +1,68 @@
+---
+// Copy-to-clipboard button for the element with id `target`. Hidden until the script finds a
+// clipboard API, so no dead control is shown. The button label stays fixed and the visible
+// role=status text reports the result, so a screen reader announces it once. The one client
+// script on the landing pages.
+interface Props {
+  target: string;
+  copy: string;
+  copied: string;
+  failed: string;
+}
+
+const { target, copy, copied, failed } = Astro.props;
+---
+
+<span class="copy-command">
+  <button type="button" class="copy-command__button" hidden data-copy-target={target} data-copied={copied} data-failed={failed}>{copy}</button>
+  <span class="copy-command__status" role="status" data-copy-status></span>
+</span>
+
+<script>
+  const RESET_MS = 2000;
+  if (navigator.clipboard) {
+    document.querySelectorAll<HTMLButtonElement>('button[data-copy-target]').forEach((button) => {
+      const status = button.parentElement?.querySelector('[data-copy-status]');
+      button.hidden = false;
+      button.addEventListener('click', async () => {
+        let label = button.dataset.failed ?? '';
+        try {
+          const source = document.getElementById(button.dataset.copyTarget ?? '');
+          await navigator.clipboard.writeText((source?.textContent ?? '').trim());
+          label = button.dataset.copied ?? '';
+        } catch {
+          // Permission denied or no focus: the failed label tells the reader to copy by hand.
+        }
+        if (status) status.textContent = label;
+        setTimeout(() => {
+          if (status) status.textContent = '';
+        }, RESET_MS);
+      });
+    });
+  }
+</script>
+
+<style>
+  .copy-command__button:not([hidden]) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0.125rem 0.75rem;
+    border: 1px solid var(--sl-color-gray-4);
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--sl-color-text);
+    font: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+  .copy-command__button:hover {
+    border-color: var(--sl-color-text-accent);
+    color: var(--sl-color-white);
+  }
+  .copy-command__status {
+    margin-inline-start: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--sl-color-text);
+  }
+</style>

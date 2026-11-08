@@ -1,0 +1,60 @@
+---
+// Footer shared by the hub and the landing pages: page-specific links plus the language switch.
+import { siteStrings } from '../../i18n/hub-strings';
+import LanguageSwitch from './LanguageSwitch.astro';
+import type { Link, Locale } from './site';
+
+interface Props {
+  locale: Locale;
+  path: string;
+  links: Link[];
+}
+
+const { locale, path, links } = Astro.props;
+const strings = siteStrings[locale];
+---
+
+<footer class="site-footer">
+  <div class="container site-footer__inner">
+    <p class="site-footer__note">{strings.footerNote}</p>
+    <nav aria-label={strings.footerLabel}>
+      <ul class="site-footer__links">
+        {
+          links.map((link) => (
+            <li>
+              <a href={link.href}>{link.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <LanguageSwitch locale={locale} path={path} />
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--sl-color-hairline);
+    padding-block: 2rem;
+    font-size: 0.9375rem;
+  }
+  .site-footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+  }
+  .site-footer__note {
+    margin-inline-end: auto;
+    color: var(--sl-color-gray-3);
+  }
+  .site-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+</style>

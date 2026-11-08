@@ -1,0 +1,50 @@
+---
+import { dbTestLandingStrings } from '../../i18n/db-test-landing-strings';
+import type { Locale } from '../shared/site';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = dbTestLandingStrings[locale];
+---
+
+<section class="section" aria-labelledby="features-title">
+  <div class="container">
+    <div class="section__head">
+      <h2 id="features-title">{t.featuresHeading}</h2>
+    </div>
+    <ul class="features">
+      {
+        t.features.map((feature) => (
+          <li class="feature">
+            <h3>{feature.title}</h3>
+            <p>{feature.body}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .feature {
+    padding: 1.5rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.875rem;
+    background: var(--sl-color-bg-surface);
+  }
+  .feature h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.125rem;
+  }
+</style>

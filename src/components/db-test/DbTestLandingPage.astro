@@ -1,0 +1,84 @@
+---
+// The db-test product landing page for one locale. Project facts (repo, NuGet package, pinned
+// release) come from projects.json; copy comes from the typed dictionary.
+import projects from '../../../projects.json';
+import LandingLayout from '../../layouts/LandingLayout.astro';
+import { dbTestLandingStrings } from '../../i18n/db-test-landing-strings';
+import { siteStrings } from '../../i18n/hub-strings';
+import SiteFooter from '../shared/SiteFooter.astro';
+import { dacpacSampleUrl } from '../../lib/upstream-snippets';
+import { SPONSOR_URL, localePath, type Locale } from '../shared/site';
+import EngineCodeSample from './EngineCodeSample.astro';
+import FeatureGrid from './FeatureGrid.astro';
+import Hero from './Hero.astro';
+import HowItWorks from './HowItWorks.astro';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = dbTestLandingStrings[locale];
+const site = siteStrings[locale];
+const { repo, ref, nuget } = projects['db-test'];
+const repoUrl = `https://github.com/${repo}`;
+
+const DOCS_PATH = '/db-test/docs/';
+const GETTING_STARTED_PATH = '/db-test/docs/getting-started/';
+---
+
+<LandingLayout
+  locale={locale}
+  title={t.title}
+  description={t.description}
+  path="/db-test/"
+  ogImage="/db-test/og.png"
+  ogImageAlt={t.ogAlt}
+  nav={[
+    { label: t.navDocs, href: localePath(locale, DOCS_PATH) },
+    { label: site.github, href: repoUrl },
+  ]}
+>
+  <main id="main">
+    <Hero locale={locale} ctaHref={localePath(locale, GETTING_STARTED_PATH)} repoUrl={repoUrl} release={ref} />
+    <EngineCodeSample locale={locale} />
+    <FeatureGrid locale={locale} />
+    <HowItWorks locale={locale} />
+    <section class="section" aria-labelledby="dacpac-title">
+      <div class="container">
+        <div class="dacpac">
+          <h2 id="dacpac-title">{t.dacpacHeading}</h2>
+          <p>{t.dacpacBody}</p>
+          <p><a href={dacpacSampleUrl}>{t.dacpacLink}</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <SiteFooter
+    locale={locale}
+    path="/db-test/"
+    links={[
+      { label: t.footerDocs, href: localePath(locale, DOCS_PATH) },
+      { label: site.github, href: repoUrl },
+      { label: t.footerNuget, href: `https://www.nuget.org/packages/${nuget}` },
+      { label: t.footerChangelog, href: `${repoUrl}/blob/main/CHANGELOG.md` },
+      { label: t.footerLicense, href: `${repoUrl}/blob/main/LICENSE` },
+      { label: site.sponsor, href: SPONSOR_URL },
+    ]}
+  />
+</LandingLayout>
+
+<style>
+  .dacpac {
+    display: grid;
+    gap: 0.75rem;
+    max-width: 48rem;
+    padding: clamp(1.5rem, 4vw, 2.25rem);
+    border: 1px solid var(--sl-color-text-accent);
+    border-radius: 0.875rem;
+    background: var(--sl-color-accent-low);
+  }
+  .dacpac h2 {
+    font-size: clamp(1.4rem, 3.5vw, 1.75rem);
+  }
+</style>

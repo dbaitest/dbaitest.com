@@ -1,0 +1,37 @@
+---
+// The README's install commands with a copy button, plus a note on using the core alone.
+import CodeBlock from '../shared/CodeBlock.astro';
+import { dbTestLandingStrings } from '../../i18n/db-test-landing-strings';
+import type { Locale } from '../shared/site';
+import { installCommands } from '../../lib/upstream-snippets';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = dbTestLandingStrings[locale];
+---
+
+<section class="install" aria-labelledby="install-title">
+  <h2 id="install-title" class="install__title">{t.installHeading}</h2>
+  <p class="install__intro">{t.installIntro}</p>
+  <CodeBlock locale={locale} id="install-commands" code={installCommands} lang="bash" caption="bash" regionLabel={t.installRegion} />
+  <p class="install__note">{t.installNote}</p>
+</section>
+
+<style>
+  .install {
+    min-width: 0;
+  }
+  .install__title {
+    font-size: 1.25rem;
+  }
+  .install__intro {
+    margin-block: 0.5rem 1rem;
+  }
+  .install__note {
+    margin-top: 1rem;
+    font-size: 0.9375rem;
+  }
+</style>

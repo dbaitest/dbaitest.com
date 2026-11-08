@@ -1,0 +1,78 @@
+---
+// Highlighted code panel (Shiki at build time, both themes via CSS variables) with a caption
+// and a copy button. The scroll area is focusable so keyboard users can scroll long lines.
+import { Code } from 'astro:components';
+import CopyCommand from './CopyCommand.astro';
+import { siteStrings } from '../../i18n/hub-strings';
+import type { Locale } from './site';
+
+interface Props {
+  locale: Locale;
+  id: string;
+  code: string;
+  lang: 'bash' | 'csharp';
+  /** Short caption shown in the panel header, e.g. `bash` or `C#`. */
+  caption: string;
+  /** Accessible name of the scrollable code region. */
+  regionLabel: string;
+}
+
+const { locale, id, code, lang, caption, regionLabel } = Astro.props;
+const strings = siteStrings[locale];
+---
+
+<figure class="code-block">
+  <figcaption class="code-block__bar">
+    <span class="code-block__lang">{caption}</span>
+    <CopyCommand target={id} copy={strings.copyCode} copied={strings.copied} failed={strings.copyFailed} />
+  </figcaption>
+  <div class="code-block__scroll" id={id} tabindex="0" role="region" aria-label={regionLabel}>
+    <Code code={code} lang={lang} themes={{ light: 'github-light-high-contrast', dark: 'github-dark-high-contrast' }} defaultColor={false} />
+  </div>
+</figure>
+
+<style>
+  .code-block {
+    margin: 0;
+    min-width: 0;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.75rem;
+    background: var(--landing-code-bg);
+    overflow: hidden;
+  }
+  .code-block__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 2.75rem;
+    padding: 0.25rem 0.75rem 0.25rem 1rem;
+    border-bottom: 1px solid var(--sl-color-hairline);
+    background: var(--sl-color-bg-surface);
+  }
+  .code-block__lang {
+    font-family: var(--landing-mono);
+    font-size: 0.8125rem;
+    color: var(--sl-color-text);
+  }
+  .code-block__scroll {
+    overflow: auto;
+    max-height: 32rem;
+  }
+  .code-block__scroll :global(pre.astro-code) {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    background: transparent;
+    font-family: var(--landing-mono);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    width: max-content;
+    min-width: 100%;
+  }
+  .code-block__scroll :global(pre.astro-code span) {
+    color: var(--shiki-dark);
+  }
+  :global(html.landing[data-theme='light']) .code-block__scroll :global(pre.astro-code span) {
+    color: var(--shiki-light);
+  }
+</style>
