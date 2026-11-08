@@ -1,3 +1,4 @@
-# Pre-launch: keep crawlers out until the domain is attached and the content is complete.
 User-agent: *
-Disallow: /
+Allow: /
+
+Sitemap: https://dbaitest.com/sitemap-index.xml
