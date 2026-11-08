@@ -232,3 +232,15 @@ export const dacpacSdkPin = jsonProperty(upstreamText('db-test global.json', glo
 export const dacpacDatabaseProject = upstreamText('db-test Sample.Database.sqlproj', databaseProjectRaw).text.trimEnd();
 export const dacpacPostDeployment = upstreamText('db-test Script.PostDeployment.sql', postDeploymentRaw).text.trimEnd();
 export const dacpacSampleUrl = `https://github.com/${repo}/tree/${ref}/samples/MsSqlDacpac`;
+
+// ---------------------------------------------------------------------------------------
+// Hub card previews
+// ---------------------------------------------------------------------------------------
+
+/** Optional code preview on a project's hub card, keyed by the project id in projects.json. */
+export const hubCardPreviews: Record<string, { code: string; caption: string } | undefined> = {
+  'db-test': { code: engineTestClasses.postgres, caption: 'PostgresCustomerTests.cs' },
+};
+
+/** The first install command without its comment: the one line a reader needs to start. */
+export const primaryInstallCommand = installCommands.split('\n')[0].replace(/\s+#.*$/, '');

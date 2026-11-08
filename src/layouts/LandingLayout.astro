@@ -4,7 +4,8 @@
 // Pages supply <main id="main"> and the footer through the default slot.
 import '../styles/brand.css';
 import '../styles/landing.css';
-import { LOCALES, SITE_ORIGIN, absoluteUrl, localePath, type Link, type Locale } from '../components/shared/site';
+import SiteHeader from '../components/shared/SiteHeader.astro';
+import { LOCALES, SITE_ORIGIN, absoluteUrl, type Link, type Locale } from '../components/shared/site';
 import { siteStrings } from '../i18n/hub-strings';
 
 interface Props {
@@ -16,9 +17,11 @@ interface Props {
   ogImage: string;
   ogImageAlt: string;
   nav?: Link[];
+  /** Project crumb shown after the wordmark on a project's landing page. */
+  project?: { name: string; release: string; href: string };
 }
 
-const { locale, title, description, path, ogImage, ogImageAlt, nav = [] } = Astro.props;
+const { locale, title, description, path, ogImage, ogImageAlt, nav = [], project } = Astro.props;
 const strings = siteStrings[locale];
 const canonical = absoluteUrl(locale, path);
 const image = `${SITE_ORIGIN}${ogImage}`;
@@ -33,6 +36,8 @@ const ogLocale = { en: 'en_US', vi: 'vi_VN' } as const;
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="color-scheme" content="dark light" />
+    <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/space-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="canonical" href={canonical} />
     {LOCALES.map((l) => <link rel="alternate" hreflang={l} href={absoluteUrl(l, path)} />)}
     <link rel="alternate" hreflang="x-default" href={absoluteUrl('en', path)} />
@@ -69,24 +74,7 @@ const ogLocale = { en: 'en_US', vi: 'vi_VN' } as const;
   </head>
   <body>
     <a class="skip-link" href="#main">{strings.skipToContent}</a>
-    <header class="site-header">
-      <div class="container site-header__inner">
-        <a class="wordmark" href={localePath(locale, '/')}>dbaitest</a>
-        {
-          nav.length > 0 && (
-            <nav aria-label={strings.navLabel}>
-              <ul class="site-nav">
-                {nav.map((item) => (
-                  <li>
-                    <a href={item.href}>{item.label}</a>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )
-        }
-      </div>
-    </header>
+    <SiteHeader locale={locale} path={path} nav={nav} project={project} />
     <slot />
   </body>
 </html>

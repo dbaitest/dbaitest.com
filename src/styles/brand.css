@@ -1,17 +1,91 @@
 /*
- * dbaitest brand tokens, layered on Starlight's theme variables so the docs, the hub and
- * the product landing pages share one palette. No logo yet: a text wordmark plus this
- * accent; swap the values here to rebrand. Accent text contrast is >= 4.5:1 on the
- * page background in both themes.
+ * dbaitest brand tokens ("Terminal Noir"), layered on Starlight's theme variables so the docs,
+ * the hub and the product landing pages share one palette and one type system:
+ * near-black ground, a single lime accent, Space Grotesk headings, Inter body, JetBrains Mono
+ * code. Accent text contrast is >= 4.5:1 on the page background in both themes.
  */
+@import './fonts.css';
+
 :root {
-  --sl-color-accent-low: #18214d;
-  --sl-color-accent: #5b7bff;
-  --sl-color-accent-high: #d4dcff;
+  --dt-font-sans: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --dt-font-display: 'Space Grotesk Variable', 'Space Grotesk', var(--dt-font-sans);
+  --dt-font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* The lime fill behind dark text (buttons, step badges): same in both themes. */
+  --dt-accent-fill: #c3f53c;
+  --dt-on-accent: #0a0c10;
+  /* One colour per engine, used only next to the engine's name. */
+  --dt-engine-mssql: #ff9b6a;
+  --dt-engine-postgres: #6ea8fe;
+  --dt-engine-mysql: #f5c451;
+
+  --sl-font: var(--dt-font-sans);
+  --sl-font-mono: var(--dt-font-mono);
+
+  --sl-color-accent-low: #1e2810;
+  --sl-color-accent: #8dbb1c;
+  --sl-color-accent-high: #c3f53c;
+
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #eceef3;
+  --sl-color-gray-2: #c9ceda;
+  --sl-color-gray-3: #a1a9b8;
+  --sl-color-gray-4: #5c6578;
+  --sl-color-gray-5: #262c3a;
+  --sl-color-gray-6: #141820;
+  --sl-color-black: #0a0c10;
 }
 
 :root[data-theme='light'] {
-  --sl-color-accent-low: #dbe2ff;
-  --sl-color-accent: #2b45c4;
-  --sl-color-accent-high: #16236b;
+  --sl-color-accent-low: #e6f6c2;
+  --sl-color-accent: #3f6212;
+  --sl-color-accent-high: #263d09;
+
+  --sl-color-white: #0a0c10;
+  --sl-color-gray-1: #161a23;
+  --sl-color-gray-2: #2e3546;
+  --sl-color-gray-3: #4a5263;
+  --sl-color-gray-4: #7a8294;
+  --sl-color-gray-5: #c9ceda;
+  --sl-color-gray-6: #e7eaf0;
+  --sl-color-gray-7: #f4f5f8;
+  --sl-color-black: #ffffff;
+}
+
+/* ---- Docs (Starlight) ------------------------------------------------------------------ */
+
+.site-title {
+  font-family: var(--dt-font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+h1#_top,
+.sl-markdown-content :is(h1, h2, h3, h4) {
+  font-family: var(--dt-font-display);
+  letter-spacing: -0.02em;
+}
+h1#_top {
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+/* Current page in the sidebar: a lime rail instead of a filled pill. */
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-white);
+  box-shadow: inset 2px 0 0 var(--sl-color-text-accent);
+}
+.sidebar-content .group-label .large {
+  font-family: var(--dt-font-mono);
+  font-size: var(--sl-text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+}
+/* "On this page": the current heading gets the accent rail. */
+starlight-toc a[aria-current='true'] {
+  box-shadow: inset 2px 0 0 var(--sl-color-text-accent);
+}
+.sl-markdown-content :not(pre) > code {
+  border-radius: 0.3rem;
 }

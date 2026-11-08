@@ -1,12 +1,17 @@
 ---
-// The hub: brand intro plus one card per entry of projects.json. Adding a project means a new
-// projects.json entry and a new `hubStrings.projects` entry; this file does not change.
+// The hub: hero with a sample test run, the engines strip, one card per entry of projects.json,
+// and the principles every project follows. Adding a project means a new projects.json entry
+// and a new `hubStrings.projects` entry (plus, optionally, a `hubCardPreviews` entry); this
+// file does not change.
 import projects from '../../../projects.json';
 import LandingLayout from '../../layouts/LandingLayout.astro';
 import { hubStrings, siteStrings } from '../../i18n/hub-strings';
+import { hubCardPreviews } from '../../lib/upstream-snippets';
 import ProjectCard from '../shared/ProjectCard.astro';
+import SectionHead from '../shared/SectionHead.astro';
 import SiteFooter from '../shared/SiteFooter.astro';
-import { GITHUB_URL, localePath, type Locale } from '../shared/site';
+import { GITHUB_URL, engineKey, localePath, type Locale } from '../shared/site';
+import RunPanel from './RunPanel.astro';
 
 interface Props {
   locale: Locale;
@@ -20,46 +25,127 @@ const cards = Object.entries(projects).map(([id, project]) => {
   const copy = t.projects[id];
   // A project without card copy must fail the build, not render an empty card.
   if (!copy) throw new Error(`hub: projects.json lists "${id}" but hubStrings.${locale}.projects has no entry for it`);
+  const preview = hubCardPreviews[id];
   return {
     id,
     release: project.ref,
     tagline: copy.tagline,
     tags: copy.tags,
+    highlights: copy.highlights,
     overviewHref: localePath(locale, `/${id}/`),
     docsHref: localePath(locale, `/${id}/docs/`),
+    sourceHref: `https://github.com/${project.repo}`,
+    preview: preview && { ...preview, regionLabel: `${t.previewRegion}: ${id}` },
   };
 });
+
+// Every engine any project supports, in first-seen order.
+const engines = [...new Set(cards.flatMap((card) => card.tags))];
+
+// Stroke icons for the principles, in the order of `t.principles`.
+const principleIcons = [
+  '<ellipse cx="12" cy="5" rx="8" ry="3"></ellipse><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"></path><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"></path>',
+  '<path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"></path><path d="M9 12l2 2 4-4"></path>',
+  '<path d="M4 5h9M8.5 3v2M6 5c1 4 3.5 6.5 6 8M11 5c-1 4-4 7-7 9"></path><path d="M13 21l4-10 4 10M14.5 17.5h5"></path>',
+];
 ---
 
-<LandingLayout locale={locale} title={t.title} description={t.description} path="/" ogImage="/og.png" ogImageAlt={t.ogAlt}>
+<LandingLayout locale={locale} title={t.title} description={t.description} path="/" ogImage="/og.png" ogImageAlt={t.ogAlt}
+  nav={[
+    { label: t.navProjects, href: '#projects' },
+    ...cards.map((card) => ({ label: card.id, href: card.overviewHref })),
+    { label: site.github, href: GITHUB_URL },
+  ]}
+>
   <main id="main">
-    <section class="hero" aria-labelledby="hub-title">
-      <div class="container">
-        <p class="eyebrow">{t.eyebrow}</p>
-        <h1 id="hub-title">{t.heading}</h1>
-        <p class="hero__intro">{t.intro}</p>
+    <section class="dot-grid" aria-labelledby="hub-title">
+      <div class="container hero">
+        <div class="hero__copy">
+          <p class="pill"><span class="pill__dot" aria-hidden="true"></span>{t.eyebrow}</p>
+          <h1 id="hub-title">
+            {t.headingBefore}<span class="accent">{t.headingAccent}</span>{t.headingAfter}<br />{t.headingLine2}
+          </h1>
+          <p class="hero__intro">{t.intro}</p>
+          <div class="hero__actions">
+            <a class="button button--primary" href="#projects">
+              {t.primaryCta}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>
+            </a>
+            <a class="button" href={GITHUB_URL}>{t.githubCta}</a>
+          </div>
+        </div>
+        <RunPanel label={t.runPanelLabel} />
       </div>
     </section>
-    <section class="section projects" aria-labelledby="projects-title">
+
+    <section class="strip" aria-label={t.runsAgainst}>
+      <div class="container strip__inner">
+        <span class="strip__label" aria-hidden="true">{t.runsAgainst}</span>
+        <ul class="strip__engines">
+          {
+            engines.map((engine) => (
+              <li>
+                <span class="engine-dot" data-engine={engineKey(engine)} aria-hidden="true" />
+                {engine}
+              </li>
+            ))
+          }
+        </ul>
+        <span class="strip__req">{t.requirements}</span>
+      </div>
+    </section>
+
+    <section id="projects" class="section" aria-labelledby="projects-title">
       <div class="container">
-        <h2 id="projects-title" class="projects__title">{t.projectsHeading}</h2>
-        <div class="projects__grid">
+        <SectionHead id="projects-title" kicker={t.projectsKicker} heading={t.projectsHeading} />
+        <div class="projects">
           {
             cards.map((card) => (
               <ProjectCard
+                locale={locale}
                 name={card.id}
                 tagline={card.tagline}
                 tags={card.tags}
+                highlights={card.highlights}
                 release={card.release}
                 releaseLabel={t.release}
                 overviewHref={card.overviewHref}
                 overviewLabel={t.overview}
                 docsHref={card.docsHref}
                 docsLabel={t.docs}
+                sourceHref={card.sourceHref}
+                sourceLabel={t.source}
+                preview={card.preview}
               />
             ))
           }
+          <aside class="contribute">
+            <div class="contribute__copy">
+              <h3>{t.contributeHeading}</h3>
+              <p>{t.contributeBody}</p>
+            </div>
+            <a class="button" href="https://github.com/dbaitest/dbaitest.com/issues">{t.contributeCta}</a>
+          </aside>
         </div>
+      </div>
+    </section>
+
+    <section class="section principles-section" aria-labelledby="principles-title">
+      <div class="container">
+        <SectionHead id="principles-title" kicker={t.principlesKicker} heading={t.principlesHeading} />
+        <ul class="principles">
+          {
+            t.principles.map((item, i) => (
+              <li class="principle">
+                <span class="principle__icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={principleIcons[i] ?? ''} />
+                </span>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+              </li>
+            ))
+          }
+        </ul>
       </div>
     </section>
   </main>
@@ -67,6 +153,7 @@ const cards = Object.entries(projects).map(([id, project]) => {
     locale={locale}
     path="/"
     links={[
+      ...cards.map((card) => ({ label: card.id, href: card.overviewHref })),
       { label: site.github, href: GITHUB_URL },
     ]}
   />
@@ -74,27 +161,143 @@ const cards = Object.entries(projects).map(([id, project]) => {
 
 <style>
   .hero {
-    padding-block: clamp(3.5rem, 10vw, 7rem) clamp(2rem, 5vw, 3.5rem);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3.5rem;
+    padding-block: clamp(3.5rem, 9vw, 6rem);
   }
-  .hero h1 {
-    max-width: 18ch;
-    font-size: clamp(2.25rem, 7vw, 4rem);
+  .hero__copy {
+    flex: 1.15 1 30rem;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.75rem;
+  }
+  .hero :global(.run-panel) {
+    flex: 1 1 27rem;
+  }
+  h1 {
+    font-size: clamp(2.5rem, 5.2vw, 4.5rem);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
   }
   .hero__intro {
-    max-width: 40rem;
-    margin-top: 1.5rem;
-    font-size: clamp(1.0625rem, 2.5vw, 1.25rem);
+    max-width: 35rem;
+    font-size: clamp(1.0625rem, 2.2vw, 1.1875rem);
+    color: var(--landing-muted);
   }
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .strip {
+    border-bottom: 1px solid var(--sl-color-hairline);
+    background: var(--landing-surface-2);
+  }
+  .strip__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.875rem 1.75rem;
+    padding-block: 1.375rem;
+  }
+  .strip__label {
+    font-family: var(--landing-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--landing-faint);
+  }
+  .strip__engines {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .strip__engines li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    color: var(--landing-heading);
+    font-family: var(--landing-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+  .strip__req {
+    margin-inline-start: auto;
+    font-size: 0.875rem;
+    color: var(--landing-faint);
+  }
+
   .projects {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .contribute {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: 1.75rem 2rem;
+    border: 1px dashed var(--landing-line-strong);
+    border-radius: 1.125rem;
+  }
+  .contribute__copy {
+    flex: 1 1 26rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .contribute h3 {
+    font-size: 1.375rem;
+  }
+  .contribute p {
+    color: var(--landing-muted);
+  }
+
+  .principles-section {
     padding-top: 1rem;
   }
-  .projects__title {
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
-  }
-  .projects__grid {
+  .principles {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .principle {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    padding: 1.75rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 1rem;
+    background: var(--landing-surface-2);
+  }
+  .principle__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.625rem;
+    background: var(--landing-surface);
+    border: 1px solid var(--sl-color-hairline);
+    color: var(--sl-color-text-accent);
+  }
+  .principle h3 {
+    font-size: 1.3125rem;
+  }
+  .principle p {
+    color: var(--landing-muted);
   }
 </style>

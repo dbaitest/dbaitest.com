@@ -1,0 +1,90 @@
+---
+// The shape guard, shown by its real failure message from the pinned README.
+import { dbTestLandingStrings } from '../../i18n/db-test-landing-strings';
+import { shapeGuardMessage } from '../../lib/upstream-snippets';
+import SectionHead from '../shared/SectionHead.astro';
+import type { Locale } from '../shared/site';
+
+interface Props {
+  locale: Locale;
+  docsHref: string;
+}
+
+const { locale, docsHref } = Astro.props;
+const t = dbTestLandingStrings[locale];
+
+// Highlight the [ShapeGuard] tag wherever it appears in the message.
+const TAG = '[ShapeGuard]';
+const parts = shapeGuardMessage.split(TAG);
+---
+
+<section class="section" aria-labelledby="guard-title">
+  <div class="container">
+    <div class="guard">
+      <div class="guard__copy">
+        <SectionHead id="guard-title" kicker={t.guardKicker} heading={t.guardHeading} intro={t.guardBody} />
+        <a class="guard__link" href={docsHref}>
+          {t.guardLink}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        </a>
+      </div>
+      <figure class="term guard__term">
+        <figcaption class="term__bar guard__bar"><span class="guard__failed">✗ FAILED</span></figcaption>
+        <pre class="term__body guard__message" tabindex="0" role="region" aria-label={t.guardRegion}>{parts.map((part, i) => (i === 0 ? part : <><span class="guard__tag">{TAG}</span>{part}</>))}</pre>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<style>
+  .guard {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2.5rem;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    border: 1px solid var(--landing-line-strong);
+    border-radius: 1.375rem;
+    background: var(--landing-surface);
+  }
+  .guard__copy {
+    flex: 1 1 22rem;
+    min-width: 0;
+  }
+  .guard__copy :global(.section-head) {
+    margin-bottom: 1.25rem;
+  }
+  .guard__copy :global(h2) {
+    font-size: clamp(1.75rem, 3.4vw, 2.5rem);
+  }
+  .guard__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .guard__link:hover {
+    text-decoration: underline;
+  }
+  .guard__term {
+    flex: 1.4 1 28rem;
+    border-color: #3a2a2e;
+  }
+  .guard__bar {
+    border-bottom-color: #2a2026;
+    background: #160f12;
+  }
+  .guard__failed {
+    color: var(--term-err);
+    font-weight: 700;
+  }
+  .guard__message {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .guard__tag {
+    color: var(--term-err);
+  }
+</style>

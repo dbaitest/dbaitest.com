@@ -19,3 +19,7 @@ export const otherLocale = (locale: Locale): Locale => (locale === 'en' ? 'vi' :
 export const localePath = (locale: Locale, path: string): string => (locale === 'en' ? path : `/vi${path}`);
 
 export const absoluteUrl = (locale: Locale, path: string): string => `${SITE_ORIGIN}${localePath(locale, path)}`;
+
+/** Key of an engine's colour token (`--dt-engine-<key>` in brand.css), by display name. */
+const ENGINE_KEYS: Record<string, string> = { 'SQL Server': 'mssql', PostgreSQL: 'postgres', MySQL: 'mysql' };
+export const engineKey = (name: string): string | undefined => ENGINE_KEYS[name];

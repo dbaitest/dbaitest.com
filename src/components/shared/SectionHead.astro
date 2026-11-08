@@ -1,0 +1,41 @@
+---
+// Section heading used across the landing pages: a mono "// kicker", the h2, and an optional
+// intro paragraph. `id` goes on the h2 so the section can be aria-labelledby it.
+interface Props {
+  id: string;
+  kicker: string;
+  heading: string;
+  intro?: string;
+}
+
+const { id, kicker, heading, intro } = Astro.props;
+---
+
+<div class="section-head">
+  <p class="section-head__kicker"><span aria-hidden="true">// </span>{kicker}</p>
+  <h2 id={id}>{heading}</h2>
+  {intro && <p class="section-head__intro">{intro}</p>}
+</div>
+
+<style>
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    max-width: 48rem;
+    margin-bottom: 2.25rem;
+  }
+  .section-head__kicker {
+    font-family: var(--landing-mono);
+    font-size: 0.8125rem;
+    color: var(--sl-color-text-accent);
+  }
+  h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+  }
+  .section-head__intro {
+    margin-top: 0.25rem;
+    font-size: 1.0625rem;
+    color: var(--landing-muted);
+  }
+</style>

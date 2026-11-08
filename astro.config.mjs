@@ -61,7 +61,15 @@ export default defineConfig({
       title: 'dbaitest',
       description: 'Open-source .NET tooling for testing against real databases.',
       favicon: '/favicon.svg',
+      logo: { light: './src/assets/logo-light.svg', dark: './src/assets/logo-dark.svg' },
       customCss: ['./src/styles/brand.css'],
+      expressiveCode: {
+        styleOverrides: {
+          borderRadius: '0.75rem',
+          codeFontFamily: "'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+          uiFontFamily: "'Inter Variable', system-ui, sans-serif",
+        },
+      },
       defaultLocale: 'root',
       locales: {
         root: { label: 'English', lang: 'en' },
