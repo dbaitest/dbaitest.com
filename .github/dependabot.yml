@@ -15,6 +15,11 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: build(deps)
+    ignore:
+      # @astrojs/check accepts TypeScript 5 and 6 only (peer ^5 || ^6). Remove this once it
+      # supports the next major, then take the bump in the same PR as @astrojs/check.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       # Starlight is pre-1.0: Astro, Starlight and its plugins move together and are
       # proven together by site-build in one pull request.
