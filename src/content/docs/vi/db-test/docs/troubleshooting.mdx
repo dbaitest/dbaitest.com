@@ -1,0 +1,94 @@
+---
+title: Xử lý sự cố
+description: Các lỗi setup, lỗi biên dịch và test fail thường gặp của db-test, cùng những hành vi của engine mà harness đã xử lý sẵn cho bạn.
+---
+
+## Setup và khởi động
+
+### Test đầu tiên fail và mọi test sau đều fail với cùng một lỗi
+
+Nhiều khả năng Docker không chạy. Harness khởi động container thật thông qua Testcontainers, nên Docker phải đang chạy.
+
+Harness khởi động thất bại được ghi nhớ là đã fail: test đầu tiên báo lỗi thật, và mọi test sau fail ngay với cùng lỗi đó, thay vì mỗi test tự chờ container của nó đến khi timeout. Hãy sửa nguyên nhân rồi chạy lại.
+
+### `SchemaApplyException` liệt kê các file
+
+Một schema script đã lỗi. db-test thử mọi file và liệt kê từng file hỏng cùng lỗi mà engine báo, để bạn thấy toàn bộ chỗ hỏng chỉ trong một lần chạy. Hãy sửa các file được nêu.
+
+Nếu một file tham chiếu object do file khác tạo, kiểm tra [thứ tự](/vi/db-test/docs/schema/#phát-hiện-và-thứ-tự). Dùng số 0 đứng đầu: `10_x.sql` được xếp trước `2_x.sql`.
+
+### `DirectoryNotFoundException` cho schema root
+
+Một đường dẫn tương đối được resolve ra thư mục không tồn tại. Có hai quy tắc:
+
+- `DbTestBase.SchemaRoot` resolve theo thư mục của test binary. Copy schema vào cạnh chúng bằng `<None Include="Schema\**\*" CopyToOutputDirectory="PreserveNewest" />`.
+- `DbTestHarness.StartAsync(schemaRoot: ...)`, `SchemaLoader.Load` và `SchemaSource` resolve theo **thư mục hiện tại**. Hãy truyền đường dẫn tuyệt đối, hoặc dựng từ `AppContext.BaseDirectory`.
+
+### `Dacpac not found at '...'`
+
+Dacpac chưa được build hoặc chưa được copy vào cạnh các test. Đây là `DbTestException` được ném trước khi bất kỳ container nào khởi động, kèm đường dẫn đầy đủ mà nó đã tìm. Xem [Build và copy dacpac](/vi/db-test/docs/sql-server-database-projects/#build-và-copy-dacpac).
+
+### `SchemaSource cannot be combined with SchemaRoot or SchemaLoadOptions`
+
+Một `InvalidOperationException` từ `DbTestBase`. Schema source mang theo vị trí và options của riêng nó. Chỉ override `SchemaSource`, hoặc dùng `DirectorySchemaSource` cho một thư mục.
+
+### Deploy dacpac bị lỗi
+
+`SchemaApplyException` nêu tên dacpac và lỗi gốc của server. Nếu dacpac tham chiếu dacpac khác, như `master.dacpac`, hãy chắc chắn mọi dacpac nằm cạnh nó đã được copy: các tham chiếu được resolve từ thư mục mà dacpac được deploy.
+
+### Container SQL Server lỗi khi khởi động
+
+SQL Server áp dụng chính sách mật khẩu, và một mật khẩu đơn giản làm container fail lúc khởi động, không phải ở lần đăng nhập đầu tiên. Hãy để trống `Password` để dùng mật khẩu mặc định đạt chính sách của engine, hoặc chọn mật khẩu đáp ứng chính sách.
+
+Container SQL Server cũng luôn đăng nhập bằng `sa`: `Username` khác sẽ ném `ArgumentException`.
+
+### `Microsoft.Data.SqlClient` từ chối chạy
+
+Nó không hoạt động ở chế độ globalization invariant. Đừng bật `InvariantGlobalization` trong test project có dùng SQL Server.
+
+## Lỗi biên dịch sau khi nâng cấp lên 0.3.0
+
+### CS0108 trên `SchemaSource`
+
+`DbTestBase` giờ có một member tên `SchemaSource`. Test class nào đã tự khai báo member cùng tên sẽ che member của base, và đó là lỗi khi bật `TreatWarningsAsErrors`. Hãy đổi tên member của bạn.
+
+### CS0121 trên `StartAsync` hoặc `GetHarnessAsync`
+
+Truyền literal `null` hoặc `default` làm đối số thứ hai của `DbTestHarness.StartAsync` hoặc `DbTestRun.GetHarnessAsync` không còn biên dịch được: lời gọi khớp với cả overload `string` và overload `SchemaSource`. Hãy bỏ đối số đó, hoặc viết `(string?)null`. Code đã biên dịch không bị ảnh hưởng.
+
+## Test fail
+
+### Test fail với `[ShapeGuard] ... left ... reshaped`
+
+Test đó đã thay đổi một table, view hoặc routine dùng chung và không trả nó về như cũ. Hãy khôi phục object trước khi test kết thúc. Xem [shape guard](/vi/db-test/docs/shape-guard/) (bộ canh hình dạng schema).
+
+Test được nêu tên là thủ phạm, không phải nạn nhân. Các test sau nó không bị đổ lỗi.
+
+### Các test ảnh hưởng lẫn nhau
+
+Các test dùng chung một container, nên bộ test phải chạy lần lượt từng test. Thêm `[assembly: DoNotParallelize]` vào test project. Xem [bắt đầu nhanh](/vi/db-test/docs/getting-started/#4-cấu-hình-test-project-một-lần).
+
+### Reference data đã seed biến mất sau `CleanAsync()`
+
+`CleanAsync()` làm trống mọi user table, kể cả reference data mà seed script hoặc post-deployment script đã chèn. Hãy chạy lại script sau khi dọn dữ liệu. Xem [hướng dẫn dacpac](/vi/db-test/docs/sql-server-database-projects/#cleanasync-cũng-xóa-cả-reference-data).
+
+### Id đầu tiên sau khi dọn không như tôi mong đợi
+
+Sau `CleanAsync()`, bộ đếm identity trở về seed, nên dòng kế tiếp nhận cùng một id trên mọi engine. MySQL không giữ seed tách khỏi bộ đếm: table của nó bắt đầu lại từ 1, kể cả khi được tạo với `AUTO_INCREMENT = n`. Xem [dọn dữ liệu](/vi/db-test/docs/cleanup/).
+
+## Các hành vi của engine đã được xử lý sẵn
+
+Đây là những hành vi của engine đã tốn nhiều thời gian debug thật sự trong lúc xây dựng db-test. Mỗi cái giờ đã được xử lý trong core. Chúng đáng biết trước khi bạn [viết một engine](/vi/db-test/docs/extending/engine/).
+
+| Bẫy | Chuyện gì xảy ra | Cách xử lý |
+|---|---|---|
+| `sys.objects.type` là `char(2)` | Cast sang string giữ lại phần padding, nên `"U "` không bao giờ bằng `"U"` và mọi table bị phân loại thành routine. | `RTRIM(CAST(o.type AS NVARCHAR(2)))` |
+| `pg_class.relkind` là `char` | Npgsql từ chối đọc cột `char` thành `System.String`. | `relkind::text` |
+| Routine nằm ngoài relation catalog | `pg_class` không có procedure, và `information_schema.tables` không có routine của MySQL. | Một query thứ hai cho mỗi engine (`pg_proc`, `information_schema.routines`). |
+| `DBCC CHECKIDENT` nhận tên được trích dẫn, phân tách bằng dấu phẩy | `DBCC CHECKIDENT ([dbo].[t]) RESEED WITH 0` là lỗi cú pháp. | `DBCC CHECKIDENT ('[dbo].[t]', RESEED, 0)` |
+| `DBCC CHECKIDENT ... RESEED, n` phụ thuộc lịch sử | Id kế tiếp là `n + increment` nếu table từng có dòng, nhưng là chính `n` nếu chưa từng, nên reseed về 0 khiến table chưa dùng bao giờ có id đầu tiên là 0. | Reseed về `seed` khi `sys.identity_columns.last_value` là `NULL`, ngược lại về `seed - increment`. |
+| `delimiter` không phải từ khóa dành riêng trong MySQL | So khớp `DELIMITER` theo dòng biến một cột tên `delimiter_char` thành chỉ thị. | Một scanner chỉ chấp nhận chỉ thị khi nó nằm giữa các statement. |
+| Chính sách mật khẩu `sa` của SQL Server | Mật khẩu đơn giản làm container fail lúc khởi động, không phải ở lần đăng nhập đầu tiên. | Engine SQL Server có sẵn mật khẩu mặc định đạt chính sách. |
+| Chế độ globalization invariant | `Microsoft.Data.SqlClient` từ chối chạy ở chế độ này. | `InvariantGlobalization` được cố ý tắt trong db-test. |
+| `SqlDataReader.GetChar` | SqlClient không hỗ trợ. | Cast ngay trong SQL. |
+| `TRUNCATE` của MySQL tôn trọng foreign key | Cần `FOREIGN_KEY_CHECKS=0`, và phải nằm trong cùng command với các lệnh truncate. | Đọc danh sách table trước, rồi truncate trong một batch. |

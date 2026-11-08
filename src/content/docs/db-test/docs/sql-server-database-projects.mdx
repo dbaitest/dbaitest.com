@@ -1,0 +1,108 @@
+---
+title: SQL Server database projects
+description: Test a SQL Server database project (SSDT or Microsoft.Build.Sql) by deploying its .dacpac into a throwaway container with DbTest.MsSql.Dacpac.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import { dacpacDatabaseProject, dacpacDefaultOptions, dacpacPostDeployment, dacpacResetMethod, dacpacSampleUrl, dacpacSdkPin, dacpacTestClass, dacpacWiring } from '../../../../lib/upstream-snippets';
+
+A SQL Server database project (SSDT, or the SDK-style `Microsoft.Build.Sql`) keeps one object per file. The objects depend on each other across folders, in both directions: a table in `dbo/Tables` has a computed column calling a function in `dbo/Functions`, which reads another table in `dbo/Tables`.
+
+No file order applies that, not even `OrderedDirectories`. The project builds into a `.dacpac`, and `DbTest.MsSql.Dacpac` deploys it with DacFx, in dependency order.
+
+{/* not in upstream: illustrative */}
+
+```bash
+dotnet add package DbTest.MsSql.Dacpac
+```
+
+:::note
+`DacpacSchemaSource` deploys to SQL Server only. With any other engine, setup throws a `DbTestException` before a container starts.
+:::
+
+## Use the dacpac as the schema
+
+Override `SchemaSource` instead of `SchemaRoot`, and return a `DacpacSchemaSource`:
+
+<Code code={dacpacTestClass} lang="csharp" title="ShopTests.cs" />
+
+Pass the dacpac path through `AppContext.BaseDirectory`. A path given to a schema source resolves against the **current directory**, unlike `SchemaRoot`, which resolves against the test binaries' directory.
+
+## Build and copy the dacpac
+
+Reference the database project from the test project, so `dotnet test` builds the dacpac. Then copy the dacpac next to the test binaries, **with every dacpac beside it**: the dacpacs it references (`master.dacpac` from `Microsoft.SqlServer.Dacpacs.Master`, another project's) are resolved from the folder it is deployed from.
+
+<Code code={dacpacWiring} lang="xml" title="Sample.Database.Tests.csproj" />
+
+The database project itself:
+
+<Code code={dacpacDatabaseProject} lang="xml" title="Sample.Database.sqlproj" />
+
+<p>
+  The <a href={dacpacSampleUrl}><code>samples/MsSqlDacpac</code></a> directory is a complete, runnable example: a database project, its tests and the build wiring. db-test's CI runs it on every change.
+</p>
+
+### Pin the SDK
+
+Put the `Microsoft.Build.Sql` version in `global.json` under `msbuild-sdks`, and write `<Project Sdk="Microsoft.Build.Sql">` without a version, so every project builds with the same one.
+
+<Code code={dacpacSdkPin} lang="json" title="global.json" />
+
+## What to know
+
+### A missing dacpac fails before any container starts
+
+The source checks its configuration before the container starts, so a mistake fails in milliseconds instead of after an image pull and a server boot. A missing dacpac throws a `DbTestException` with the full path it looked for:
+
+{/* not in upstream: illustrative */}
+
+```text
+Dacpac not found at '<full path>'. Build the .sqlproj and copy its .dacpac next to the tests ...
+```
+
+A dacpac that SQL Server rejects is different: it fails setup with a `SchemaApplyException` naming the dacpac and the server's error. The password is removed from the message.
+
+### `SchemaSource` and `SchemaRoot` are exclusive
+
+A schema source carries its own location and options. Setting `SchemaSource` together with `SchemaRoot` or `SchemaLoadOptions` throws an `InvalidOperationException` when the first test initializes, instead of ignoring one of them. Override only `SchemaSource`.
+
+To apply a directory through the source model, use `DirectorySchemaSource`.
+
+### Deploy options
+
+Without options, the source deploys with these defaults:
+
+- nothing is dropped (`DropObjectsNotInSource = false`);
+- possible data loss does not block the deploy (`BlockOnPossibleDataLoss = false`);
+- no new database is created, because the engine already created it (`CreateNewDatabase = false`);
+- database-level settings such as the recovery model and filegroups are skipped (`ScriptDatabaseOptions = false`), because a throwaway container has no use for them and they are the likeliest deploy failure there;
+- every command is bounded by the engine's command timeout (`CommandTimeout` and `LongRunningCommandTimeout`).
+
+Options you pass are used exactly as given, and a bare `new DacDeployOptions()` has no timeout at all. Start from the defaults:
+
+<Code code={dacpacDefaultOptions} lang="csharp" />
+
+:::caution
+Do not change the options after creating the source. Its key is computed at construction, and applying changed options throws an `InvalidOperationException` rather than letting two different schemas share a container.
+:::
+
+Test classes whose dacpac or options differ get separate containers.
+
+### `CleanAsync` also empties reference data
+
+`CleanAsync()` empties every table, including reference data that the project's post-deployment script seeded. Run the script again after cleaning. The sample does it in `[TestInitialize]`:
+
+<Code code={dacpacResetMethod} lang="csharp" title="ShopTests.cs" />
+
+This works as long as the script is idempotent and has no SQLCMD syntax. The sample's script:
+
+<Code code={dacpacPostDeployment} lang="sql" title="Script.PostDeployment.sql" />
+
+### Telemetry
+
+DacFx sends usage telemetry to Microsoft unless the environment variable `DACFX_TELEMETRY_OPTOUT` is `1`. Set `<DacFxTelemetryEnabled>false</DacFxTelemetryEnabled>` in the `.sqlproj` to switch it off at build time too. db-test's own repository does both.
+
+## Next
+
+- [Shape guard](/db-test/docs/shape-guard/) and [cleanup](/db-test/docs/cleanup/) work with a dacpac schema as they do with SQL files.
+- [Writing a schema source](/db-test/docs/extending/schema-source/) for other schema formats.

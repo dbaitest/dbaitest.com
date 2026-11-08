@@ -1,0 +1,44 @@
+---
+title: Cleanup
+description: CleanAsync empties every table whatever the foreign keys and resets identity counters, on SQL Server, PostgreSQL and MySQL.
+---
+
+import { Code, TabItem, Tabs } from '@astrojs/starlight/components';
+import { cleanAsyncCall } from '../../../../lib/upstream-snippets';
+
+One test's rows must not leak into the next. Call `CleanAsync()` at the start of a test:
+
+<Code code={cleanAsyncCall} lang="csharp" />
+
+In a `DbTestBase` class, `harness` is `Harness`.
+
+## What it does
+
+`CleanAsync()` empties every user table, whatever the foreign keys between them, and puts every identity column back to its seed. The next row gets the same id on every engine.
+
+The mechanism differs by engine:
+
+<Tabs syncKey="engine">
+  <TabItem label="SQL Server">
+    A table that no foreign key references is truncated. That empties it and resets its identity to exactly the declared seed, whatever the column type.
+
+    SQL Server refuses to truncate a table a foreign key references, even a disabled one. Those tables are emptied with `DELETE` while every constraint is disabled, and the constraints are re-enabled `WITH CHECK` so the optimizer still trusts them. Their identity is then reseeded.
+
+    :::caution
+    If a referenced table has an identity column whose seed minus increment is outside the column type's range (for example a `tinyint IDENTITY(0,1)` that has held rows), no reseed can make the next id the seed. The clean then fails with a message naming the table.
+    :::
+  </TabItem>
+  <TabItem label="PostgreSQL">
+    One statement: `TRUNCATE TABLE ... RESTART IDENTITY CASCADE` over every base table outside `pg_catalog` and `information_schema`. It empties every table and resets every owned sequence to its start value.
+  </TabItem>
+  <TabItem label="MySQL">
+    Foreign key checks are switched off, every table is truncated, and the checks are switched back on, all in one command.
+
+    MySQL keeps no seed apart from the counter: `TRUNCATE` resets `AUTO_INCREMENT` to 1, so a table created with `AUTO_INCREMENT = n` restarts at 1.
+  </TabItem>
+</Tabs>
+
+## What it does not do
+
+- It does not touch the shape of objects. That is the [shape guard](/db-test/docs/shape-guard/)'s job.
+- It also empties **reference data** that a seed script inserted. Seed it again after cleaning. With a SQL Server database project, see [the dacpac guide](/db-test/docs/sql-server-database-projects/) for how the sample does it.

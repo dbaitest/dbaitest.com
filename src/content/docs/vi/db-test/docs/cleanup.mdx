@@ -1,0 +1,44 @@
+---
+title: Dọn dữ liệu
+description: CleanAsync làm trống mọi table bất kể foreign key và đặt lại bộ đếm identity, trên SQL Server, PostgreSQL và MySQL.
+---
+
+import { Code, TabItem, Tabs } from '@astrojs/starlight/components';
+import { cleanAsyncCall } from '../../../../../lib/upstream-snippets';
+
+Dữ liệu của test này không được rò sang test sau. Gọi `CleanAsync()` ở đầu test:
+
+<Code code={cleanAsyncCall} lang="csharp" />
+
+Trong class `DbTestBase`, `harness` chính là `Harness`.
+
+## Nó làm gì
+
+`CleanAsync()` làm trống mọi user table, bất kể foreign key giữa chúng, và đưa mọi cột identity về giá trị seed. Dòng kế tiếp nhận cùng một id trên mọi engine.
+
+Cơ chế khác nhau theo engine:
+
+<Tabs syncKey="engine">
+  <TabItem label="SQL Server">
+    Table không có foreign key nào trỏ tới sẽ được truncate. Việc đó làm trống table và đặt identity về đúng seed đã khai báo, bất kể kiểu cột.
+
+    SQL Server từ chối truncate table đang bị foreign key tham chiếu, kể cả khi key đã bị disable. Các table đó được làm trống bằng `DELETE` trong lúc mọi constraint bị disable, rồi constraint được enable lại `WITH CHECK` để optimizer vẫn tin tưởng chúng. Sau đó identity của chúng được reseed.
+
+    :::caution
+    Nếu table được tham chiếu có cột identity mà seed trừ increment nằm ngoài miền giá trị của kiểu cột (ví dụ `tinyint IDENTITY(0,1)` đã từng chứa dòng), không cách reseed nào làm id kế tiếp bằng seed được. Khi đó thao tác dọn fail với thông báo nêu tên table.
+    :::
+  </TabItem>
+  <TabItem label="PostgreSQL">
+    Một câu lệnh: `TRUNCATE TABLE ... RESTART IDENTITY CASCADE` trên mọi base table nằm ngoài `pg_catalog` và `information_schema`. Nó làm trống mọi table và đặt mọi sequence sở hữu về giá trị bắt đầu.
+  </TabItem>
+  <TabItem label="MySQL">
+    Foreign key check được tắt, mọi table được truncate, rồi check được bật lại, tất cả trong một command.
+
+    MySQL không giữ seed tách khỏi bộ đếm: `TRUNCATE` đặt `AUTO_INCREMENT` về 1, nên table được tạo với `AUTO_INCREMENT = n` sẽ bắt đầu lại từ 1.
+  </TabItem>
+</Tabs>
+
+## Nó không làm gì
+
+- Nó không đụng đến hình dạng của object. Đó là việc của [shape guard](/vi/db-test/docs/shape-guard/) (bộ canh hình dạng schema).
+- Nó cũng làm trống **reference data** mà seed script đã chèn. Hãy seed lại sau khi dọn. Với database project của SQL Server, xem [hướng dẫn dacpac](/vi/db-test/docs/sql-server-database-projects/) để biết sample làm việc này thế nào.

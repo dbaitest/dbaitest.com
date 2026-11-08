@@ -1,0 +1,100 @@
+---
+title: The schema
+description: How db-test discovers, orders, splits and applies a directory of SQL files, and how it reports excluded files and broken scripts.
+---
+
+import { Code, TabItem, Tabs } from '@astrojs/starlight/components';
+import { schemaCopyToOutput, schemaLoaderSample, schemaStartAsync } from '../../../../lib/upstream-snippets';
+
+Point the harness at a directory of SQL files. db-test applies them one after another to the fresh container.
+
+For a schema that is not a directory of SQL files, such as a SQL Server database project, see [SQL Server database projects](/db-test/docs/sql-server-database-projects/) and [writing a schema source](/db-test/docs/extending/schema-source/).
+
+## Pointing at a directory
+
+In a `DbTestBase` class, override `SchemaRoot`. A relative path resolves against the test binaries' directory.
+
+{/* not in upstream: illustrative */}
+
+```csharp
+protected override string SchemaRoot => "Schema/postgres";
+```
+
+Or start a harness directly:
+
+<Code code={schemaStartAsync} lang="csharp" />
+
+:::caution
+`DbTestHarness.StartAsync` resolves a relative `schemaRoot` against the **current directory**, not the test binaries' directory. Only `SchemaRoot` in `DbTestBase` (and `DbTestRun.GetHarnessAsync`) resolves against the binaries. Pass an absolute path, or build one from `AppContext.BaseDirectory`, when you call `StartAsync` yourself.
+:::
+
+Copy the files next to the test binaries so a relative `SchemaRoot` works:
+
+<Code code={schemaCopyToOutput} lang="xml" />
+
+## Discovery and order
+
+Files with the extension `.sql` or `.psql` are discovered recursively, whatever the engine.
+
+They are ordered by their relative path, compared case-insensitively. `001_tables.sql` runs before `002_procedures.sql`, so use leading zeros: `10_x.sql` sorts before `2_x.sql`.
+
+:::tip
+A file that references an object created by an earlier file must come later. Without ordering rules, a `procedures/` directory runs before `tables/`. Use `OrderedDirectories` below to fix that.
+:::
+
+## How each engine applies files
+
+<Tabs syncKey="engine">
+  <TabItem label="SQL Server">
+    - **Batch separator:** `GO`, a client directive the server rejects. It must be the only token on its line, case-insensitive, optionally indented, with an optional repeat count (`GO 3` sends the batch three times) and an optional `--` comment.
+    - **Function body:** `CREATE PROCEDURE`.
+    - **Applied as:** one batch per `GO` segment. A batch is sent whole, not split on semicolons, which keeps a `CREATE PROCEDURE` body intact.
+  </TabItem>
+  <TabItem label="PostgreSQL">
+    - **Batch separator:** none.
+    - **Function body:** `$$ ... $$`.
+    - **Applied as:** the whole file as one command, which keeps every `$$ ... $$` body intact.
+  </TabItem>
+  <TabItem label="MySQL">
+    - **Batch separator:** the `DELIMITER` directive.
+    - **Function body:** `BEGIN ... END`.
+    - **Applied as:** one statement per delimiter, sent without the delimiter.
+  </TabItem>
+</Tabs>
+
+The SQL Server and MySQL splitters are real scanners, not line matchers. A `GO` or a delimiter inside a string literal, a quoted identifier or a comment is never a separator, and a column named `delimiter_char` is not a `DELIMITER` directive.
+
+Comments stay in the command they belong to. A trailing piece that holds only comments and whitespace is dropped, because MySQL rejects an empty query.
+
+## Excluding and ordering files
+
+`SchemaLoadOptions` controls discovery. Override `SchemaLoadOptions` in a `DbTestBase` class, or pass it to the harness.
+
+| Option | Effect |
+|---|---|
+| `ExcludedDirectories` | Directory names whose files are skipped entirely. Matched case-insensitively against each directory segment of the relative path. |
+| `ExcludedFileNamePatterns` | Regular expressions matched against the file name, case-insensitively. A match excludes the file. A pattern that takes longer than one second throws. |
+| `OrderedDirectories` | Directories, relative to the schema root, applied in exactly this order before any other file. A directory includes its subdirectories. |
+
+Excluded files are **reported**, never silently dropped:
+
+<Code code={schemaLoaderSample} lang="csharp" />
+
+`Reason` is `directory-excluded` or `filename-excluded`. `load.Scripts` holds what will be applied, in order.
+
+`SchemaLoader.Load` throws a `DirectoryNotFoundException` when the root does not exist.
+
+:::note
+`SchemaLoader.Load` uses a path relative to the current directory too. In a test, pass an absolute one.
+:::
+
+## When a script fails
+
+A schema that only partly applied would surface later as unrelated test failures. db-test fails loudly at setup instead.
+
+A failing file does not stop the apply: every file is tried, and `StartAsync` throws a `SchemaApplyException` listing every broken file with the error the engine raised. The exception's `Failures` property holds each one as a `SchemaApplyFailure` with `RelativePath` and `Error`.
+
+## Next
+
+- [Shape guard](/db-test/docs/shape-guard/): what protects the schema once it is applied.
+- [Cleanup](/db-test/docs/cleanup/): emptying tables between tests.

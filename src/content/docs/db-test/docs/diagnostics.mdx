@@ -1,0 +1,48 @@
+---
+title: Diagnostics
+description: Per-test timing output for db-test suites, switched on with DBTEST_TIMING=1 and written to a TSV file.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import { timingCommand } from '../../../../lib/upstream-snippets';
+
+"The suite is slow" is easier to fix with numbers. db-test can write one row per test to a tab-separated file.
+
+## Turn it on
+
+<Code code={timingCommand} lang="bash" />
+
+With `DbTest.MSTest`, this writes one row per test to `dbtest-timing.tsv` next to the test binaries.
+
+It is off by default: no file is written unless it is switched on, and only the exact value `1` switches it on.
+
+## Choose the file
+
+Set `DBTEST_TIMING_FILE` to write somewhere else:
+
+{/* not in upstream: illustrative */}
+
+```bash
+DBTEST_TIMING=1 DBTEST_TIMING_FILE=timings.tsv dotnet test
+```
+
+| Variable | Effect |
+|---|---|
+| `DBTEST_TIMING` | `1` turns timing on. Anything else leaves it off. |
+| `DBTEST_TIMING_FILE` | Overrides the output path. Default: `dbtest-timing.tsv` next to the test binaries. |
+
+## The file
+
+The file is tab-separated, with the header `kind`, `value`, `detail`. Each test is one row:
+
+- `kind` is `test`;
+- `value` is the duration in milliseconds, with one decimal;
+- `detail` is the test name, `ClassName.TestName`.
+
+The file is appended to, so several test assemblies can share one. The header is written only when the file is new or empty.
+
+Diagnostics never fail a run. A write error is reported on the console and otherwise ignored.
+
+:::tip
+Sort the file by the `value` column to find the slowest tests. [CI](/db-test/docs/ci/) can upload it as an artifact.
+:::

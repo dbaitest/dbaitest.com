@@ -1,0 +1,108 @@
+---
+title: Database project của SQL Server
+description: Kiểm thử database project (dự án cơ sở dữ liệu) của SQL Server (SSDT hoặc Microsoft.Build.Sql) bằng cách deploy file .dacpac của nó vào container dùng một lần với DbTest.MsSql.Dacpac.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import { dacpacDatabaseProject, dacpacDefaultOptions, dacpacPostDeployment, dacpacResetMethod, dacpacSampleUrl, dacpacSdkPin, dacpacTestClass, dacpacWiring } from '../../../../../lib/upstream-snippets';
+
+Một database project (dự án cơ sở dữ liệu) của SQL Server (SSDT, hoặc `Microsoft.Build.Sql` kiểu SDK) lưu mỗi object trong một file. Các object phụ thuộc lẫn nhau giữa các thư mục, theo cả hai chiều: một table trong `dbo/Tables` có computed column gọi một function trong `dbo/Functions`, và function đó đọc một table khác trong `dbo/Tables`.
+
+Không thứ tự file nào áp dụng được schema như vậy, kể cả `OrderedDirectories`. Project build ra một `.dacpac`, và `DbTest.MsSql.Dacpac` deploy nó bằng DacFx, theo đúng thứ tự phụ thuộc.
+
+{/* not in upstream: illustrative */}
+
+```bash
+dotnet add package DbTest.MsSql.Dacpac
+```
+
+:::note
+`DacpacSchemaSource` chỉ deploy lên SQL Server. Với bất kỳ engine nào khác, bước setup ném `DbTestException` trước khi container khởi động.
+:::
+
+## Dùng dacpac làm schema
+
+Override `SchemaSource` thay vì `SchemaRoot`, và trả về một `DacpacSchemaSource`:
+
+<Code code={dacpacTestClass} lang="csharp" title="ShopTests.cs" />
+
+Truyền đường dẫn dacpac qua `AppContext.BaseDirectory`. Đường dẫn đưa cho một schema source được resolve theo **thư mục hiện tại**, khác với `SchemaRoot` resolve theo thư mục của test binary.
+
+## Build và copy dacpac
+
+Tham chiếu database project từ test project, để `dotnet test` build ra dacpac. Sau đó copy dacpac vào cạnh test binary, **cùng với mọi dacpac nằm cạnh nó**: các dacpac mà nó tham chiếu (`master.dacpac` từ `Microsoft.SqlServer.Dacpacs.Master`, hoặc dacpac của project khác) được resolve từ thư mục mà nó được deploy.
+
+<Code code={dacpacWiring} lang="xml" title="Sample.Database.Tests.csproj" />
+
+Bản thân database project:
+
+<Code code={dacpacDatabaseProject} lang="xml" title="Sample.Database.sqlproj" />
+
+<p>
+  Thư mục <a href={dacpacSampleUrl}><code>samples/MsSqlDacpac</code></a> là một ví dụ hoàn chỉnh, chạy được: một database project, các test của nó và phần build wiring. CI của db-test chạy nó ở mỗi thay đổi.
+</p>
+
+### Ghim SDK
+
+Đặt phiên bản `Microsoft.Build.Sql` trong `global.json` dưới `msbuild-sdks`, và viết `<Project Sdk="Microsoft.Build.Sql">` không kèm phiên bản, để mọi project build với cùng một phiên bản.
+
+<Code code={dacpacSdkPin} lang="json" title="global.json" />
+
+## Những điều cần biết
+
+### Thiếu dacpac thì fail trước khi container khởi động
+
+Source kiểm tra cấu hình trước khi container khởi động, nên lỗi hiện ra trong vài mili giây thay vì sau khi pull image và boot server. Thiếu dacpac sẽ ném `DbTestException` kèm đường dẫn đầy đủ mà nó đã tìm:
+
+{/* not in upstream: illustrative */}
+
+```text
+Dacpac not found at '<full path>'. Build the .sqlproj and copy its .dacpac next to the tests ...
+```
+
+Dacpac mà SQL Server từ chối thì khác: setup fail với `SchemaApplyException` nêu tên dacpac và lỗi của server. Mật khẩu đã được loại khỏi thông báo.
+
+### `SchemaSource` và `SchemaRoot` loại trừ lẫn nhau
+
+Một schema source mang theo vị trí và options của riêng nó. Đặt `SchemaSource` cùng với `SchemaRoot` hoặc `SchemaLoadOptions` sẽ ném `InvalidOperationException` khi test đầu tiên khởi tạo, thay vì bỏ qua một trong hai. Chỉ override `SchemaSource`.
+
+Để áp dụng một thư mục qua mô hình source, dùng `DirectorySchemaSource`.
+
+### Deploy options
+
+Khi không truyền options, source deploy với các mặc định sau:
+
+- không xóa gì cả (`DropObjectsNotInSource = false`);
+- khả năng mất dữ liệu không chặn deploy (`BlockOnPossibleDataLoss = false`);
+- không tạo database mới, vì engine đã tạo rồi (`CreateNewDatabase = false`);
+- các thiết lập mức database như recovery model và filegroup bị bỏ qua (`ScriptDatabaseOptions = false`), vì container dùng một lần không cần chúng và chúng là nguyên nhân dễ gây lỗi deploy nhất ở đây;
+- mọi command bị giới hạn bởi command timeout của engine (`CommandTimeout` và `LongRunningCommandTimeout`).
+
+Options bạn truyền vào được dùng đúng như đã cho, và một `new DacDeployOptions()` trống hoàn toàn không có timeout. Hãy bắt đầu từ các mặc định:
+
+<Code code={dacpacDefaultOptions} lang="csharp" />
+
+:::caution
+Đừng thay đổi options sau khi đã tạo source. Key của nó được tính lúc khởi tạo, và việc áp dụng options đã bị đổi sẽ ném `InvalidOperationException`, thay vì để hai schema khác nhau dùng chung một container.
+:::
+
+Các test class có dacpac hoặc options khác nhau sẽ có container riêng.
+
+### `CleanAsync` cũng xóa cả reference data
+
+`CleanAsync()` làm trống mọi table, kể cả reference data mà post-deployment script của project đã seed. Hãy chạy lại script sau khi dọn dữ liệu. Sample làm việc này trong `[TestInitialize]`:
+
+<Code code={dacpacResetMethod} lang="csharp" title="ShopTests.cs" />
+
+Cách này hoạt động miễn là script idempotent và không dùng cú pháp SQLCMD. Script của sample:
+
+<Code code={dacpacPostDeployment} lang="sql" title="Script.PostDeployment.sql" />
+
+### Telemetry
+
+DacFx gửi telemetry sử dụng về Microsoft trừ khi biến môi trường `DACFX_TELEMETRY_OPTOUT` là `1`. Đặt `<DacFxTelemetryEnabled>false</DacFxTelemetryEnabled>` trong `.sqlproj` để tắt nó cả lúc build. Repository của chính db-test làm cả hai.
+
+## Tiếp theo
+
+- [Shape guard](/vi/db-test/docs/shape-guard/) và [dọn dữ liệu](/vi/db-test/docs/cleanup/) hoạt động với schema dacpac giống như với file SQL.
+- [Viết nguồn schema](/vi/db-test/docs/extending/schema-source/) cho các định dạng schema khác.

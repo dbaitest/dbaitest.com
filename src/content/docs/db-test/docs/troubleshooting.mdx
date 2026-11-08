@@ -1,0 +1,94 @@
+---
+title: Troubleshooting
+description: Common db-test setup failures, compile errors and test failures, and the engine behaviours the harness already handles for you.
+---
+
+## Setup and startup
+
+### The first test fails and every later test fails with the same error
+
+Docker is probably not running. The harness starts real containers through Testcontainers, so Docker must be up.
+
+A harness that failed to start is remembered as failed: the first test reports the real error, and every later test fails fast with the same one, instead of each waiting for its own container to time out. Fix the cause and run again.
+
+### `SchemaApplyException` listing files
+
+A schema script failed. db-test tries every file and lists each broken one with the error the engine raised, so you see the whole breakage in one run. Fix the files named.
+
+If a file references an object created by another file, check the [order](/db-test/docs/schema/#discovery-and-order). Use leading zeros: `10_x.sql` sorts before `2_x.sql`.
+
+### `DirectoryNotFoundException` for the schema root
+
+A relative path resolved to a directory that does not exist. Two rules apply:
+
+- `DbTestBase.SchemaRoot` resolves against the test binaries' directory. Copy the schema next to them with `<None Include="Schema\**\*" CopyToOutputDirectory="PreserveNewest" />`.
+- `DbTestHarness.StartAsync(schemaRoot: ...)`, `SchemaLoader.Load` and a `SchemaSource` resolve against the **current directory**. Pass an absolute path, or build one from `AppContext.BaseDirectory`.
+
+### `Dacpac not found at '...'`
+
+The dacpac was not built or not copied next to the tests. This is a `DbTestException` thrown before any container starts, with the full path it looked for. See [Build and copy the dacpac](/db-test/docs/sql-server-database-projects/#build-and-copy-the-dacpac).
+
+### `SchemaSource cannot be combined with SchemaRoot or SchemaLoadOptions`
+
+An `InvalidOperationException` from `DbTestBase`. A schema source carries its own location and options. Override only `SchemaSource`, or use `DirectorySchemaSource` for a directory.
+
+### A deploy of the dacpac fails
+
+The `SchemaApplyException` names the dacpac and the server's own error. If the dacpac references another dacpac, such as `master.dacpac`, make sure every dacpac beside it was copied: references are resolved from the folder the dacpac is deployed from.
+
+### The SQL Server container fails at startup
+
+SQL Server enforces a password policy, and a simple password fails the container at startup, not at first login. Leave `Password` unset to use the engine's policy-compliant default, or choose one that meets the policy.
+
+The SQL Server container also always logs in as `sa`: a different `Username` throws an `ArgumentException`.
+
+### `Microsoft.Data.SqlClient` refuses to run
+
+It does not work under globalization invariant mode. Do not enable `InvariantGlobalization` in a test project that uses SQL Server.
+
+## Compile errors after upgrading to 0.3.0
+
+### CS0108 on `SchemaSource`
+
+`DbTestBase` now has a member named `SchemaSource`. A test class that already declares its own member with that name hides the base one, which is an error under `TreatWarningsAsErrors`. Rename your member.
+
+### CS0121 on `StartAsync` or `GetHarnessAsync`
+
+Passing a `null` or `default` literal as the second argument of `DbTestHarness.StartAsync` or `DbTestRun.GetHarnessAsync` no longer compiles: the call matches both the `string` and the `SchemaSource` overload. Omit the argument, or write `(string?)null`. Compiled code is unaffected.
+
+## Test failures
+
+### A test fails with `[ShapeGuard] ... left ... reshaped`
+
+That test changed a shared table, view or routine and did not put it back. Restore the object before the test ends. See [the shape guard](/db-test/docs/shape-guard/).
+
+The test named is the culprit, not the victim. The tests after it are not blamed.
+
+### Tests interfere with each other
+
+Tests share one container, so the suite has to run one at a time. Add `[assembly: DoNotParallelize]` to the test project. See [getting started](/db-test/docs/getting-started/#4-configure-the-test-project-once).
+
+### Seeded reference data is gone after `CleanAsync()`
+
+`CleanAsync()` empties every user table, including reference data that a seed or post-deployment script inserted. Run the script again after cleaning. See [the dacpac guide](/db-test/docs/sql-server-database-projects/#cleanasync-also-empties-reference-data).
+
+### The first id after a clean is not what I expect
+
+After `CleanAsync()`, identity counters are back at their seed, so the next row gets the same id on every engine. MySQL keeps no seed apart from the counter: its tables restart at 1, even when created with `AUTO_INCREMENT = n`. See [cleanup](/db-test/docs/cleanup/).
+
+## Engine behaviours handled for you
+
+These are engine behaviours that cost real debugging time while db-test was built. Each one is now handled in the core. They are worth knowing before you [write an engine](/db-test/docs/extending/engine/).
+
+| Trap | What happens | Fix |
+|---|---|---|
+| `sys.objects.type` is `char(2)` | Cast to string keeps the padding, so `"U "` never equals `"U"` and every table is classified as a routine. | `RTRIM(CAST(o.type AS NVARCHAR(2)))` |
+| `pg_class.relkind` is `char` | Npgsql refuses to read a `char` column as `System.String`. | `relkind::text` |
+| Routines live outside the relation catalog | `pg_class` has no procedures, and `information_schema.tables` has no MySQL routines. | A second query per engine (`pg_proc`, `information_schema.routines`). |
+| `DBCC CHECKIDENT` takes a quoted, comma-separated name | `DBCC CHECKIDENT ([dbo].[t]) RESEED WITH 0` is a syntax error. | `DBCC CHECKIDENT ('[dbo].[t]', RESEED, 0)` |
+| `DBCC CHECKIDENT ... RESEED, n` depends on history | The next id is `n + increment` if the table ever held a row, but `n` itself if it never did, so reseeding to 0 gave a never-used table a first id of 0. | Reseed to `seed` when `sys.identity_columns.last_value` is `NULL`, else to `seed - increment`. |
+| `delimiter` is not reserved in MySQL | A line-based `DELIMITER` match turned a column named `delimiter_char` into a directive. | A scanner that only accepts the directive between statements. |
+| SQL Server's `sa` password policy | A simple password fails the container at startup, not at first login. | The SQL Server engine owns a policy-compliant default. |
+| Globalization invariant mode | `Microsoft.Data.SqlClient` refuses to run under it. | `InvariantGlobalization` is deliberately off in db-test. |
+| `SqlDataReader.GetChar` | Not supported by SqlClient. | Cast in SQL instead. |
+| MySQL's `TRUNCATE` respects foreign keys | It needs `FOREIGN_KEY_CHECKS=0`, which must be in the same command as the truncates. | The table list is read first, then truncated in one batch. |

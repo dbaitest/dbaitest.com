@@ -1,0 +1,84 @@
+---
+title: Writing a schema source
+description: Bring a schema that is not a directory of SQL files into db-test by implementing a SchemaSource.
+---
+
+A schema that is not a directory of SQL files comes in through a `SchemaSource`. Pass it to `DbTestHarness.StartAsync(engine, source)`, or return it from `DbTestBase.SchemaSource`.
+
+Two sources are built in: `DirectorySchemaSource`, which is what `schemaRoot` does, and `DacpacSchemaSource`, described in [SQL Server database projects](/db-test/docs/sql-server-database-projects/).
+
+A source plugs into the same harness, [shape guard](/db-test/docs/shape-guard/) and [cleanup](/db-test/docs/cleanup/) as a directory does.
+
+## The three members
+
+`SchemaSource` is an abstract class, for the same reason as [`DbEngine`](/db-test/docs/extending/engine/): a new capability can arrive as a virtual member with a default, without breaking a source written outside the db-test repository.
+
+### `Key`
+
+Identifies the schema. Sources with equal keys share a container, so the key must cover everything that changes what is deployed.
+
+It is read before any container starts, so it **must not touch the file system or throw**. Report a missing file from `Validate`, not here.
+
+### `Validate(engine)`
+
+Runs before the container starts. It is virtual and does nothing by default.
+
+Throw `DbTestException` for a configuration mistake, such as a missing file or an engine the source cannot deploy to, so it fails in milliseconds rather than after an image pull and a server boot.
+
+### `ApplyAsync(context, cancellationToken)`
+
+Puts the schema into `context.Database` and returns the outcome as a `SchemaApplyResult`. Return failures in the result rather than throwing them, so every broken object is reported at once. The harness calls `ThrowIfFailed()` on the result, which throws a `SchemaApplyException`.
+
+{/* not in upstream: illustrative */}
+
+```csharp
+public sealed class SnapshotSchemaSource(string snapshotPath) : SchemaSource
+{
+    private readonly string _path = Path.GetFullPath(snapshotPath);
+
+    public override string Key => "snapshot:" + _path;
+
+    public override void Validate(DbEngine engine)
+    {
+        if (!File.Exists(_path))
+        {
+            throw new DbTestException($"Snapshot not found at '{_path}'.");
+        }
+    }
+
+    public override async Task<SchemaApplyResult> ApplyAsync(
+        SchemaApplyContext context,
+        CancellationToken cancellationToken = default)
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        // LoadSnapshotAsync is yours: it puts the snapshot into context.Database and returns
+        // the error text the server reported, or null when it worked.
+        string? error = await LoadSnapshotAsync(context, _path, cancellationToken);
+
+        return error is null
+            ? new SchemaApplyResult(["snapshot.bak"], [], stopwatch.Elapsed)
+            : new SchemaApplyResult([], [new SchemaApplyFailure("snapshot.bak", error)], stopwatch.Elapsed);
+    }
+}
+```
+
+The snippet is a skeleton: `SnapshotSchemaSource` is an invented example, and loading the snapshot is up to your source.
+
+## What the context holds
+
+`SchemaApplyContext` carries three members:
+
+| Member | Meaning |
+|---|---|
+| `Engine` | The engine of the running container. |
+| `ConnectionString` | Connection string to the target database. **It holds the password: keep it out of messages.** |
+| `Database` | Name of the target database, which the engine has already created. |
+
+Its `ToString()` names only the engine and the database, never the connection string. `DacpacSchemaSource` removes the password from deploy errors before it reports them, and your source should do the same.
+
+## Relative paths
+
+A source resolves a relative path against the **current directory**. To resolve one against the test binaries' directory, pass `Path.Join(AppContext.BaseDirectory, ...)`.
+
+`DbTestBase.SchemaRoot` is different: it keeps resolving against the test binaries' directory. See [troubleshooting](/db-test/docs/troubleshooting/) for what happens when `SchemaSource` and `SchemaRoot` are both set.

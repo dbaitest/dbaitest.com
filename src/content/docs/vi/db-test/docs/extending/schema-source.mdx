@@ -1,0 +1,84 @@
+---
+title: Viết một nguồn schema
+description: Đưa một schema không phải thư mục file SQL vào db-test bằng cách hiện thực một SchemaSource.
+---
+
+Schema không phải thư mục file SQL được đưa vào qua một `SchemaSource`. Truyền nó vào `DbTestHarness.StartAsync(engine, source)`, hoặc trả về từ `DbTestBase.SchemaSource`.
+
+Có hai source có sẵn: `DirectorySchemaSource`, chính là thứ `schemaRoot` dùng, và `DacpacSchemaSource`, được mô tả trong [Database project của SQL Server](/vi/db-test/docs/sql-server-database-projects/).
+
+Một source cắm vào cùng harness, [shape guard](/vi/db-test/docs/shape-guard/) (bộ canh hình dạng schema) và [dọn dữ liệu](/vi/db-test/docs/cleanup/) như một thư mục.
+
+## Ba member
+
+`SchemaSource` là abstract class, vì cùng lý do với [`DbEngine`](/vi/db-test/docs/extending/engine/): khả năng mới có thể xuất hiện dưới dạng virtual member có mặc định, mà không làm hỏng source được viết bên ngoài repository db-test.
+
+### `Key`
+
+Định danh schema. Các source có key bằng nhau dùng chung một container, nên key phải bao phủ mọi thứ làm thay đổi những gì được deploy.
+
+Nó được đọc trước khi bất kỳ container nào khởi động, nên **không được đụng đến file system hay ném exception**. Hãy báo file thiếu từ `Validate`, đừng báo ở đây.
+
+### `Validate(engine)`
+
+Chạy trước khi container khởi động. Nó là virtual và mặc định không làm gì.
+
+Ném `DbTestException` cho lỗi cấu hình, như thiếu file hoặc một engine mà source không deploy được, để lỗi hiện ra trong vài mili giây thay vì sau khi pull image và boot server.
+
+### `ApplyAsync(context, cancellationToken)`
+
+Đưa schema vào `context.Database` và trả về kết quả dưới dạng `SchemaApplyResult`. Hãy trả lỗi trong result thay vì ném chúng, để mọi object hỏng được báo cáo cùng lúc. Harness gọi `ThrowIfFailed()` trên result, và hàm này ném `SchemaApplyException`.
+
+{/* not in upstream: illustrative */}
+
+```csharp
+public sealed class SnapshotSchemaSource(string snapshotPath) : SchemaSource
+{
+    private readonly string _path = Path.GetFullPath(snapshotPath);
+
+    public override string Key => "snapshot:" + _path;
+
+    public override void Validate(DbEngine engine)
+    {
+        if (!File.Exists(_path))
+        {
+            throw new DbTestException($"Snapshot not found at '{_path}'.");
+        }
+    }
+
+    public override async Task<SchemaApplyResult> ApplyAsync(
+        SchemaApplyContext context,
+        CancellationToken cancellationToken = default)
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        // LoadSnapshotAsync is yours: it puts the snapshot into context.Database and returns
+        // the error text the server reported, or null when it worked.
+        string? error = await LoadSnapshotAsync(context, _path, cancellationToken);
+
+        return error is null
+            ? new SchemaApplyResult(["snapshot.bak"], [], stopwatch.Elapsed)
+            : new SchemaApplyResult([], [new SchemaApplyFailure("snapshot.bak", error)], stopwatch.Elapsed);
+    }
+}
+```
+
+Đoạn code trên chỉ là bộ khung: `SnapshotSchemaSource` là ví dụ tự đặt, và việc nạp snapshot do source của bạn tự lo.
+
+## Context chứa gì
+
+`SchemaApplyContext` mang ba member:
+
+| Member | Ý nghĩa |
+|---|---|
+| `Engine` | Engine của container đang chạy. |
+| `ConnectionString` | Connection string tới database đích. **Nó chứa mật khẩu: đừng đưa nó vào thông báo.** |
+| `Database` | Tên database đích, mà engine đã tạo sẵn. |
+
+`ToString()` của nó chỉ nêu engine và database, không bao giờ nêu connection string. `DacpacSchemaSource` loại mật khẩu khỏi lỗi deploy trước khi báo, và source của bạn cũng nên làm vậy.
+
+## Đường dẫn tương đối
+
+Một source resolve đường dẫn tương đối theo **thư mục hiện tại**. Để resolve theo thư mục của test binary, hãy truyền `Path.Join(AppContext.BaseDirectory, ...)`.
+
+`DbTestBase.SchemaRoot` thì khác: nó vẫn resolve theo thư mục của test binary. Xem [xử lý sự cố](/vi/db-test/docs/troubleshooting/) để biết điều gì xảy ra khi đặt cả `SchemaSource` và `SchemaRoot`.

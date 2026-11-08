@@ -1,0 +1,130 @@
+---
+title: Bắt đầu nhanh
+description: Cài db-test, kiểm tra yêu cầu và chạy test cơ sở dữ liệu đầu tiên trên SQL Server, PostgreSQL hoặc MySQL.
+---
+
+import { Code, TabItem, Tabs } from '@astrojs/starlight/components';
+import { customerTestsClass, engineTestClasses, installCommands, runSetupSample, schemaCopyToOutput } from '../../../../../lib/upstream-snippets';
+
+## Cài đặt
+
+Thêm base class cho test framework của bạn và một package cho mỗi engine bạn kiểm thử.
+
+<Code code={installCommands} lang="bash" title="Install" />
+
+Riêng `DbTest.Core` cung cấp harness mà không gắn với test framework nào. `DbTest.MSTest` đã kéo nó theo.
+
+Về công cụ dòng lệnh, xem [CLI](/vi/db-test/docs/cli/).
+
+## Yêu cầu
+
+- **Docker** phải đang chạy. Harness khởi động container thật thông qua [Testcontainers](https://github.com/testcontainers/testcontainers-dotnet).
+- **.NET 8 trở lên.** Các package có sẵn asset `net8.0` và `net10.0`. .NET 8 và 9 dùng asset `net8.0`, .NET 10 trở lên dùng asset `net10.0`.
+
+:::note
+CLI tự roll forward, nên chạy được trên bất kỳ runtime nào ở trên mà máy bạn đã cài.
+:::
+
+## 1. Thêm schema
+
+Đặt các file SQL vào một thư mục riêng cho mỗi engine. Các schema dưới đây chỉ là ví dụ: DDL nào test của bạn cần cũng được.
+
+<Tabs syncKey="engine">
+  <TabItem label="SQL Server">
+    {/* not in upstream: illustrative */}
+
+    ```sql title="Schema/mssql/001_tables.sql"
+    CREATE TABLE dbo.customers (
+        id           INT IDENTITY(1, 1) PRIMARY KEY,
+        email        NVARCHAR(256) NOT NULL,
+        display_name NVARCHAR(256) NOT NULL
+    );
+    ```
+  </TabItem>
+  <TabItem label="PostgreSQL">
+    {/* not in upstream: illustrative */}
+
+    ```sql title="Schema/postgres/001_tables.sql"
+    CREATE TABLE customers (
+        id           SERIAL PRIMARY KEY,
+        email        TEXT NOT NULL,
+        display_name TEXT NOT NULL
+    );
+    ```
+  </TabItem>
+  <TabItem label="MySQL">
+    {/* not in upstream: illustrative */}
+
+    ```sql title="Schema/mysql/001_tables.sql"
+    CREATE TABLE customers (
+        id           INT AUTO_INCREMENT PRIMARY KEY,
+        email        VARCHAR(256) NOT NULL,
+        display_name VARCHAR(256) NOT NULL
+    );
+    ```
+  </TabItem>
+</Tabs>
+
+Copy các file này vào cạnh test binary, để `SchemaRoot` tương đối được resolve đúng:
+
+<Code code={schemaCopyToOutput} lang="xml" />
+
+Xem [schema](/vi/db-test/docs/schema/) để biết quy tắc sắp thứ tự, tách script và loại trừ file.
+
+## 2. Viết test một lần
+
+Kế thừa `DbTestBase` trong một abstract class. `Harness` là harness dùng chung cho engine đang được test.
+
+<Code code={customerTestsClass} lang="csharp" />
+
+Các namespace cần dùng là `DbTest.Core.Engine` và `DbTest.MSTest`, cộng thêm một namespace cho mỗi engine: `DbTest.MsSql`, `DbTest.PostgreSql` hoặc `DbTest.MySql`.
+
+## 3. Thêm một class cho mỗi engine
+
+Mỗi class chỉ rõ engine và nơi đặt schema của nó. Chỉ thêm những engine bạn cần.
+
+<Tabs syncKey="engine">
+  <TabItem label="SQL Server">
+    <Code code={engineTestClasses.mssql} lang="csharp" />
+  </TabItem>
+  <TabItem label="PostgreSQL">
+    <Code code={engineTestClasses.postgres} lang="csharp" />
+  </TabItem>
+  <TabItem label="MySQL">
+    <Code code={engineTestClasses.mysql} lang="csharp" />
+  </TabItem>
+</Tabs>
+
+`CreateEngine()` được gọi trước mỗi test, nhưng chỉ lần gọi đầu tiên trong một lần chạy mới khởi động container.
+
+## 4. Cấu hình test project một lần
+
+Các test dùng chung một container, nên chúng chạy lần lượt từng test, và container cần được xóa ngay khi lần chạy kết thúc.
+
+<Code code={runSetupSample} lang="csharp" />
+
+`DbTestRun` nằm trong namespace `DbTest.MSTest`.
+
+:::caution
+Thiếu `[assembly: DoNotParallelize]`, các test thay đổi hình dạng của object dùng chung sẽ làm hỏng lẫn nhau. Container dùng chung đòi hỏi bộ test chạy tuần tự.
+:::
+
+Nếu không gọi `DisposeAllAsync()`, resource reaper của Testcontainers sẽ xóa container khi test host thoát.
+
+## 5. Chạy thử
+
+{/* not in upstream: illustrative */}
+
+```bash
+dotnet test
+```
+
+Test đầu tiên của mỗi engine khởi động container và áp dụng schema. Các test sau trong cùng lần chạy dùng lại container đó.
+
+Nếu Docker không chạy, test đầu tiên fail với lỗi thật và mọi test sau fail ngay với cùng lỗi đó, thay vì mỗi test tự chờ container của nó đến khi timeout.
+
+## Tiếp theo
+
+- [Engine](/vi/db-test/docs/engines/): image, tài khoản đăng nhập và các tùy chọn container.
+- [Shape guard](/vi/db-test/docs/shape-guard/) và [dọn dữ liệu](/vi/db-test/docs/cleanup/): những gì chạy quanh mỗi test.
+- [Xử lý sự cố](/vi/db-test/docs/troubleshooting/).

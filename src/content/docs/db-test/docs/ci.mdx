@@ -1,0 +1,27 @@
+---
+title: Continuous integration
+description: Run db-test integration tests in GitHub Actions, one job per database engine, with per-test timings uploaded as an artifact.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import { integrationJob } from '../../../../lib/upstream-snippets';
+
+db-test's own CI runs its integration suite against all three engines. This is the job, as it is in the repository. Adapt it for your project.
+
+<Code code={integrationJob} lang="yaml" title=".github/workflows/ci.yml" />
+
+## What to take from it
+
+**One job per engine.** The suite starts a container per engine. Running the engines as separate matrix legs, with `fail-fast: false`, keeps one engine's failure from hiding the others' results.
+
+**Docker comes from the runner.** The job has no Docker setup step: it relies on the Docker daemon on the `ubuntu-latest` runner, which Testcontainers talks to.
+
+**Select a leg by class name.** The matrix value is part of the test class name, and `--filter "FullyQualifiedName~${{ matrix.engine }}HarnessTests"` runs only that engine's classes: `MsSqlHarnessTests`, `PostgreSqlHarnessTests` or `MySqlHarnessTests`. Name your per-engine classes in a pattern like that to filter the same way.
+
+**One step per runtime.** The packages ship `net8.0` and `net10.0` assets. The job tests both with `--framework`, in one job so the database image is pulled once, and installs both runtimes with `actions/setup-dotnet`.
+
+**Timings as an artifact.** `DBTEST_TIMING: "1"` turns on [the per-test timing file](/db-test/docs/diagnostics/). The last step uploads it for each engine, with `if: always()` so a failing run still reports its timings.
+
+:::tip
+Pin third-party actions to a full commit SHA, as the workflow does, with the release tag in a comment. A tag can be moved, a SHA cannot.
+:::

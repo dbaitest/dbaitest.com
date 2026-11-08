@@ -1,0 +1,101 @@
+---
+title: Engine
+description: Các engine SQL Server, PostgreSQL và MySQL của db-test - package, image và tài khoản mặc định, tùy chọn container và điểm khác nhau giữa các engine.
+---
+
+import { TabItem, Tabs } from '@astrojs/starlight/components';
+
+Engine là nơi duy nhất db-test biết đến một sản phẩm cơ sở dữ liệu. Code test không bao giờ nhắc đến nó: engine nằm sau abstract class `DbEngine`.
+
+## Các engine có sẵn
+
+| | SQL Server | PostgreSQL | MySQL |
+|---|---|---|---|
+| Package | `DbTest.MsSql` | `DbTest.PostgreSql` | `DbTest.MySql` |
+| Class | `MsSqlEngine` | `PostgreSqlEngine` | `MySqlEngine` |
+| Namespace | `DbTest.MsSql` | `DbTest.PostgreSql` | `DbTest.MySql` |
+| Tên (CLI, báo cáo) | `mssql` | `postgres` | `mysql` |
+| Image mặc định | `mcr.microsoft.com/mssql/server:2022-latest` | `postgres:16-alpine` | `mysql:8.4` |
+| Tài khoản đăng nhập | luôn là `sa` | `dbtest` | `dbtest` |
+
+Mỗi engine cũng cung cấp image của nó dưới dạng hằng số: `MsSqlEngine.DefaultContainerImage`, `PostgreSqlEngine.DefaultContainerImage` và `MySqlEngine.DefaultContainerImage`.
+
+<Tabs syncKey="engine">
+  <TabItem label="SQL Server">
+    {/* not in upstream: illustrative */}
+
+    ```csharp
+    protected override DbEngine CreateEngine() => new MsSqlEngine();
+    ```
+  </TabItem>
+  <TabItem label="PostgreSQL">
+    {/* not in upstream: illustrative */}
+
+    ```csharp
+    protected override DbEngine CreateEngine() => new PostgreSqlEngine();
+    ```
+  </TabItem>
+  <TabItem label="MySQL">
+    {/* not in upstream: illustrative */}
+
+    ```csharp
+    protected override DbEngine CreateEngine() => new MySqlEngine();
+    ```
+  </TabItem>
+</Tabs>
+
+## Tùy chọn container
+
+Override `ContainerOptions` trong class `DbTestBase`, hoặc truyền một `DbContainerOptions` vào `DbTestHarness.StartAsync`. Mọi property đều có giá trị mặc định, nên `null` nghĩa là dùng mặc định của engine.
+
+| Property | Mặc định | Ý nghĩa |
+|---|---|---|
+| `Image` | `DefaultImage` của engine | Container image. |
+| `Database` | `dbtest` | Tên database được tạo bên trong container. |
+| `Username` | của riêng engine | Tài khoản đăng nhập bên trong container. |
+| `Password` | của riêng engine | Mật khẩu bên trong container. |
+| `StartupTimeout` | 3 phút | Thời gian chờ container sẵn sàng nhận kết nối. |
+| `Environment` | rỗng | Các biến môi trường bổ sung truyền vào container. |
+
+{/* not in upstream: illustrative */}
+
+```csharp
+[TestClass]
+public sealed class PostgresCustomerTests : CustomerTests
+{
+    protected override DbEngine CreateEngine() => new PostgreSqlEngine();
+    protected override string SchemaRoot => "Schema/postgres";
+
+    protected override DbContainerOptions? ContainerOptions => new()
+    {
+        Image = "postgres:17-alpine",
+    };
+}
+```
+
+:::caution[Tài khoản và mật khẩu SQL Server]
+Container SQL Server luôn đăng nhập bằng `sa` và không có cách nào đổi: mọi `Username` khác đều ném `ArgumentException`.
+
+SQL Server cũng áp dụng chính sách mật khẩu khi khởi động, và một mật khẩu đơn giản sẽ làm container fail trước khi nó nhận kết nối, chứ không phải ở lần đăng nhập đầu tiên. Engine có sẵn một mật khẩu mặc định đạt chính sách, nên hãy để trống `Password` trừ khi bạn cần tự chọn.
+:::
+
+Các test class chỉ dùng chung một container khi mọi thứ định danh nó đều giống nhau: engine, image, database, tài khoản, mật khẩu, environment và schema. Class có container options khác sẽ có container riêng.
+
+## Command timeout
+
+Mọi command mà engine chạy đều chịu `CommandTimeout` của engine, mặc định là hai phút. Đây là một virtual property của `DbEngine`.
+
+## Các engine khác nhau ở đâu
+
+Ba cơ sở dữ liệu này khác nhau ở hầu hết mọi thứ, và trước đây mỗi điểm khác biệt là một trường hợp đặc biệt trong code test. db-test xử lý chúng bên trong engine.
+
+| Vấn đề | SQL Server | PostgreSQL | MySQL |
+|---|---|---|---|
+| Ký hiệu ngăn batch | `GO` | không có | `DELIMITER` |
+| Thân function | `CREATE PROCEDURE` | `$$ ... $$` | `BEGIN ... END` |
+| Làm trống một table | `TRUNCATE`, hoặc `DELETE` khi đã tắt constraint nếu có foreign key trỏ tới | `TRUNCATE ... RESTART IDENTITY CASCADE` | `TRUNCATE` khi tắt `FOREIGN_KEY_CHECKS` |
+| Đọc danh sách object | `sys.objects`, `sys.columns` | `pg_class`, `pg_attribute`, `pg_proc` | `information_schema` |
+
+Cách tách file schema được trình bày trong [schema](/vi/db-test/docs/schema/), và cách làm trống table trong [dọn dữ liệu](/vi/db-test/docs/cleanup/).
+
+Cần một cơ sở dữ liệu khác? [Viết một engine](/vi/db-test/docs/extending/engine/).

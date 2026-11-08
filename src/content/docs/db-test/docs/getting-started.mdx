@@ -1,0 +1,130 @@
+---
+title: Getting started
+description: Install db-test, meet the requirements, and run your first database test against SQL Server, PostgreSQL or MySQL.
+---
+
+import { Code, TabItem, Tabs } from '@astrojs/starlight/components';
+import { customerTestsClass, engineTestClasses, installCommands, runSetupSample, schemaCopyToOutput } from '../../../../lib/upstream-snippets';
+
+## Install
+
+Add the base class for your test framework and one package per engine you test against.
+
+<Code code={installCommands} lang="bash" title="Install" />
+
+`DbTest.Core` alone gives the harness without any test framework. `DbTest.MSTest` brings it in.
+
+For the command-line tool, see [the CLI](/db-test/docs/cli/).
+
+## Requirements
+
+- **Docker** must be running. The harness starts real containers through [Testcontainers](https://github.com/testcontainers/testcontainers-dotnet).
+- **.NET 8 or newer.** The packages ship a `net8.0` and a `net10.0` asset. .NET 8 and 9 resolve the `net8.0` one, .NET 10 and later the `net10.0` one.
+
+:::note
+The CLI rolls forward, so it runs on whichever of those runtimes is installed.
+:::
+
+## 1. Add a schema
+
+Put your SQL files in one directory per engine. The schemas below are examples: any DDL your tests need will do.
+
+<Tabs syncKey="engine">
+  <TabItem label="SQL Server">
+    {/* not in upstream: illustrative */}
+
+    ```sql title="Schema/mssql/001_tables.sql"
+    CREATE TABLE dbo.customers (
+        id           INT IDENTITY(1, 1) PRIMARY KEY,
+        email        NVARCHAR(256) NOT NULL,
+        display_name NVARCHAR(256) NOT NULL
+    );
+    ```
+  </TabItem>
+  <TabItem label="PostgreSQL">
+    {/* not in upstream: illustrative */}
+
+    ```sql title="Schema/postgres/001_tables.sql"
+    CREATE TABLE customers (
+        id           SERIAL PRIMARY KEY,
+        email        TEXT NOT NULL,
+        display_name TEXT NOT NULL
+    );
+    ```
+  </TabItem>
+  <TabItem label="MySQL">
+    {/* not in upstream: illustrative */}
+
+    ```sql title="Schema/mysql/001_tables.sql"
+    CREATE TABLE customers (
+        id           INT AUTO_INCREMENT PRIMARY KEY,
+        email        VARCHAR(256) NOT NULL,
+        display_name VARCHAR(256) NOT NULL
+    );
+    ```
+  </TabItem>
+</Tabs>
+
+Copy the files next to the test binaries, so the relative `SchemaRoot` resolves:
+
+<Code code={schemaCopyToOutput} lang="xml" />
+
+See [the schema](/db-test/docs/schema/) for ordering, splitting and exclusion rules.
+
+## 2. Write the test once
+
+Derive from `DbTestBase` in an abstract class. `Harness` is the shared harness for the engine under test.
+
+<Code code={customerTestsClass} lang="csharp" />
+
+The namespaces are `DbTest.Core.Engine` and `DbTest.MSTest`, plus one per engine: `DbTest.MsSql`, `DbTest.PostgreSql` or `DbTest.MySql`.
+
+## 3. Add one class per engine
+
+Each class names the engine and where its schema lives. Add only the engines you need.
+
+<Tabs syncKey="engine">
+  <TabItem label="SQL Server">
+    <Code code={engineTestClasses.mssql} lang="csharp" />
+  </TabItem>
+  <TabItem label="PostgreSQL">
+    <Code code={engineTestClasses.postgres} lang="csharp" />
+  </TabItem>
+  <TabItem label="MySQL">
+    <Code code={engineTestClasses.mysql} lang="csharp" />
+  </TabItem>
+</Tabs>
+
+`CreateEngine()` is called before every test, but only the first call per run starts a container.
+
+## 4. Configure the test project once
+
+Tests share a container, so they run one at a time, and the containers should be removed as soon as the run ends.
+
+<Code code={runSetupSample} lang="csharp" />
+
+`DbTestRun` is in the `DbTest.MSTest` namespace.
+
+:::caution
+Without `[assembly: DoNotParallelize]`, tests that reshape shared objects corrupt each other. A shared container requires a sequential suite.
+:::
+
+Without `DisposeAllAsync()`, Testcontainers' resource reaper removes the containers when the test host exits.
+
+## 5. Run it
+
+{/* not in upstream: illustrative */}
+
+```bash
+dotnet test
+```
+
+The first test of each engine starts its container and applies the schema. Later tests in the run reuse it.
+
+If Docker is not running, the first test fails with the real error and every later test fails fast with the same one, instead of each waiting for its own container to time out.
+
+## Next
+
+- [Engines](/db-test/docs/engines/): images, logins and container options.
+- [Shape guard](/db-test/docs/shape-guard/) and [cleanup](/db-test/docs/cleanup/): what runs around every test.
+- [Troubleshooting](/db-test/docs/troubleshooting/).

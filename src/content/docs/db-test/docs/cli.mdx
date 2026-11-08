@@ -1,0 +1,78 @@
+---
+title: The CLI
+description: The dbtest command-line tool - list engines, start a throwaway database container with a schema applied, and inspect what a schema creates.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import { cliCommands, cliInstallCommand } from '../../../../lib/upstream-snippets';
+
+`dbtest` exposes the harness operations that are useful outside a test run: start a container with a schema applied, and inspect the result.
+
+## Install
+
+<Code code={cliInstallCommand} lang="bash" />
+
+The CLI rolls forward, so it runs on whichever of .NET 8 or newer is installed. It needs Docker running, like the library.
+
+## Commands
+
+<Code code={cliCommands} lang="bash" />
+
+### `dbtest engines`
+
+Lists the registered engines: `mssql`, `postgres` and `mysql`.
+
+### `dbtest up`
+
+Starts a container, applies the schema, prints the connection string, and keeps the container running until you press Ctrl+C. A container that disappeared as soon as its connection string was printed would be of no use.
+
+`--engine` is required. `--schema` is optional: without it no schema is applied.
+
+Ctrl+C stops the command and removes the container. The exit code is `0`.
+
+### `dbtest schema`
+
+Loads the schema directory, prints the scripts that will be applied and any excluded files, then starts a container, applies the schema, lists the objects it created, and removes the container.
+
+Both `--engine` and `--schema` are required.
+
+Example output shape:
+
+{/* not in upstream: illustrative */}
+
+```text
+2 script(s) will be applied:
+  001_tables.sql
+  002_procedures.sql
+2 object(s) created:
+  Table   public.customers (3 column(s))
+  ...
+```
+
+## Options
+
+| Option | Meaning |
+|---|---|
+| `--engine <name>` | `mssql`, `postgres` or `mysql`. |
+| `--schema <dir>` | Directory holding the schema files. |
+| `--image <image>` | Override the container image. |
+| `--database <name>` | Database name inside the container. Default: `dbtest`. |
+| `--username <name>` | Login inside the container. Default: the engine's own. |
+| `--password <pass>` | Password inside the container. Default: the engine's own. |
+
+`-h` and `--help` print the usage text.
+
+Every option takes a value. Parsing is strict: an unknown option such as `--shema`, or an option missing its value, is an error instead of being silently ignored.
+
+:::note
+The CLI applies a directory of SQL files. It does not deploy a `.dacpac`.
+:::
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Success. This includes Ctrl+C on a running `dbtest up`, once its container is up. |
+| `1` | A failure such as Docker not running, a broken schema or a bad image. Reported as one `error:` line, not a stack trace. `dbtest` with no arguments also exits `1`: it prints the usage text to standard error, with no `error:` line. |
+| `2` | Usage error: unknown command or option, a missing value or a missing required option. The usage text follows the message. |
+| `130` | Cancelled with Ctrl+C before the command finished: while `dbtest up` is still starting the container or applying the schema, or while `dbtest schema` runs. The message is `Cancelled.`. |
