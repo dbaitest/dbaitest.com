@@ -1,0 +1,17 @@
+/*
+ * dbaitest brand tokens, layered on Starlight's theme variables so the docs, the hub and
+ * the product landing pages share one palette. No logo yet: a text wordmark plus this
+ * accent; swap the values here to rebrand. Accent text contrast is >= 4.5:1 on the
+ * page background in both themes.
+ */
+:root {
+  --sl-color-accent-low: #18214d;
+  --sl-color-accent: #5b7bff;
+  --sl-color-accent-high: #d4dcff;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #dbe2ff;
+  --sl-color-accent: #2b45c4;
+  --sl-color-accent-high: #16236b;
+}
