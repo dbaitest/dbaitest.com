@@ -20,9 +20,18 @@ export default defineConfig({
   // denied in public/_headers.
   security: {
     csp: {
-      directives: ["default-src 'self'", "img-src 'self' data:", "object-src 'none'", "base-uri 'self'", "form-action 'self'"],
+      // Cloudflare Web Analytics: the edge injects beacon.min.js (with SRI) into every page and
+      // it reports to cloudflareinsights.com. Cookie-free; these two origins are all it needs.
+      directives: [
+        "default-src 'self'",
+        "img-src 'self' data:",
+        "connect-src 'self' https://cloudflareinsights.com",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ],
       scriptDirective: {
-        resources: ["'self'", "'wasm-unsafe-eval'"],
+        resources: ["'self'", "'wasm-unsafe-eval'", "https://static.cloudflareinsights.com"],
         hashes: [
           // @astrojs/starlight 0.42.10 inline scripts
           'sha256-VWo5Wp4aqSj6nSgMpeAp9cKieaoIfwFUAunAVugI5gA=', // StarlightThemeProvider (head)
