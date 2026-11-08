@@ -1,0 +1,24 @@
+# Dependencies and build output
+node_modules/
+dist/
+.astro/
+.wrangler/
+
+# Project sources cloned at build time from the repos listed in projects.json
+.upstream/
+
+# Local agent plans and reports: working notes, never published
+plans/
+
+# Local environment
+.env
+.env.*
+.dev.vars
+
+# IDE / OS
+.vs/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

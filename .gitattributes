@@ -1,0 +1,10 @@
+# Normalize line endings: the site builds on Linux, and the lockfiles and check scripts expect LF.
+* text=auto eol=lf
+
+# Binary
+*.png     binary
+*.jpg     binary
+*.webp    binary
+*.avif    binary
+*.ico     binary
+*.woff2   binary
