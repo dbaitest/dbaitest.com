@@ -12,7 +12,6 @@ export interface Link {
 
 export const SITE_ORIGIN = 'https://dbaitest.com';
 export const GITHUB_URL = 'https://github.com/dbaitest';
-export const SPONSOR_URL = 'https://github.com/sponsors/dbaitest';
 
 export const otherLocale = (locale: Locale): Locale => (locale === 'en' ? 'vi' : 'en');
 

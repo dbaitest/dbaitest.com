@@ -10,7 +10,6 @@ interface SiteStrings {
   /** The language's own name, shown on the link that switches to it. */
   languageName: string;
   github: string;
-  sponsor: string;
   footerNote: string;
   copyCode: string;
   copied: string;
@@ -25,7 +24,6 @@ export const siteStrings: Localized<SiteStrings> = {
     languageLabel: 'Language',
     languageName: 'English',
     github: 'GitHub',
-    sponsor: 'Sponsor',
     footerNote: 'dbaitest: open-source .NET tooling.',
     copyCode: 'Copy',
     copied: 'Copied',
@@ -38,7 +36,6 @@ export const siteStrings: Localized<SiteStrings> = {
     languageLabel: 'Ngôn ngữ',
     languageName: 'Tiếng Việt',
     github: 'GitHub',
-    sponsor: 'Tài trợ',
     footerNote: 'dbaitest: công cụ .NET mã nguồn mở.',
     copyCode: 'Sao chép',
     copied: 'Đã sao chép',
