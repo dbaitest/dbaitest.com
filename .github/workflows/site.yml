@@ -1,0 +1,214 @@
+name: Site
+
+# Every pull request builds and verifies the site with no secrets. A push to `main` deploys
+# the artifact that build produced. A manual run rolls production back.
+#
+# The jobs that hold the Cloudflare token (site-deploy, site-rollback) never install the
+# site's build dependencies: they install only wrangler, from deploy/, with install scripts
+# off, and the token is visible to the one wrangler step. No third-party actions; the
+# official ones are pinned to a commit SHA.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Weekly: rebuild against the pinned upstream refs and flag projects with a newer release.
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      version_id:
+        description: "Worker version id to roll back to (empty = the previous version). Find ids in a deploy run's summary."
+        required: false
+        default: ""
+      reason:
+        description: "Why production is being rolled back"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  # Per event: a scheduled or manual run on main must never displace a pending deploy.
+  group: site-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  ASTRO_TELEMETRY_DISABLED: "1"
+  WRANGLER_SEND_METRICS: "false"
+
+jobs:
+  site-build:
+    name: site-build
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            deploy/package-lock.json
+
+      - name: Install the site's dependencies
+        run: npm ci
+
+      - name: Audit the site's dependencies
+        run: |
+          npm audit --audit-level=moderate
+          npm audit signatures
+
+      # Installed here only to be audited: the build never runs wrangler.
+      - name: Audit the deploy toolchain
+        working-directory: deploy
+        run: |
+          npm ci --ignore-scripts
+          npm audit --audit-level=moderate
+          npm audit signatures
+
+      - name: Verify and build
+        run: npm run verify
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: site
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+      # Docs describe each project at the release pinned in projects.json. A newer release
+      # means the pin needs a bump PR; fail the scheduled run so somebody notices.
+      - name: Check the pinned project refs are the latest releases
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          behind=0
+          # Read first: a jq failure inside a process substitution would not fail the step.
+          entries="$(jq -r 'to_entries[] | [.key, .value.repo, .value.ref] | @tsv' projects.json)"
+          while IFS=$'\t' read -r id repo ref; do
+            latest="$(gh api "repos/${repo}/releases/latest" --jq .tag_name)"
+            if [ "$latest" != "$ref" ]; then
+              echo "::error title=${id} is behind::projects.json pins ${repo} at ${ref}; the latest release is ${latest}. Open a PR bumping the ref."
+              behind=1
+            else
+              echo "${id}: ${ref} is the latest release of ${repo}"
+            fi
+          done <<< "$entries"
+          exit "$behind"
+
+  site-deploy:
+    name: site-deploy
+    needs: site-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    # A newer pending deploy replaces an older pending one; it carries the older commits too.
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .node-version
+            wrangler.jsonc
+            deploy
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+
+      - name: Install wrangler only
+        working-directory: deploy
+        run: npm ci --ignore-scripts
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site
+          path: dist
+
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --no --prefix deploy wrangler deploy --message="${GITHUB_SHA}" 2>&1 | tee deploy.log
+          version="$(grep -oE 'Current Version ID: [0-9a-f-]+' deploy.log | awk '{print $4}' || true)"
+          {
+            echo "### Deployed"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Commit | \`${GITHUB_SHA}\` |"
+            echo "| Worker version | \`${version:-unknown, see the log}\` |"
+            echo ""
+            echo "Roll back to the version before this one: run the **Site** workflow manually (site-rollback) with an empty version id."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  site-rollback:
+    name: site-rollback
+    # No branch condition here: the production environment only accepts main, so a run from
+    # another branch fails visibly instead of skipping every job and showing green.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    # Its own group: GitHub keeps one pending job per group and cancels the older one, so a
+    # shared group would let a deploy and a rollback silently cancel each other. Wait for a
+    # running deploy to finish before rolling back (CONTRIBUTING.md, rollback runbook).
+    concurrency:
+      group: production-rollback
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .node-version
+            wrangler.jsonc
+            deploy
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+
+      - name: Install wrangler only
+        working-directory: deploy
+        run: npm ci --ignore-scripts
+
+      - name: Roll back
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VERSION_ID: ${{ inputs.version_id }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          set -euo pipefail
+          if [ -n "$VERSION_ID" ] && ! printf '%s' "$VERSION_ID" | grep -Eq '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'; then
+            echo "::error::version_id must be a Worker version id (a UUID) or empty."
+            exit 1
+          fi
+          if [ "${#REASON}" -gt 100 ]; then
+            echo "::error::reason is limited to 100 characters (Cloudflare version message)."
+            exit 1
+          fi
+          # An empty VERSION_ID expands to no argument: wrangler rolls back to the previous version.
+          npx --no --prefix deploy wrangler rollback ${VERSION_ID:+"$VERSION_ID"} --message="$REASON" --yes
+          {
+            echo "### Rolled back"
+            echo ""
+            echo "To: \`${VERSION_ID:-previous version}\` — by @${GITHUB_ACTOR}: ${REASON}"
+          } >> "$GITHUB_STEP_SUMMARY"
