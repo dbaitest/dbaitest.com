@@ -1,9 +1,12 @@
 ---
-// The README's three-engine sample and its once-per-project setup block, both extracted at build
-// time so they always match the pinned release. The setup block is what removes the containers.
+// The README's three-engine sample, extracted at build time so it always matches the pinned
+// release: the shared abstract class on the left, the per-engine classes behind tabs on the
+// right. Without JavaScript all three engine panels show stacked; the script turns them into
+// an ARIA tablist (arrow keys, Home, End).
 import CodeBlock from '../shared/CodeBlock.astro';
 import { dbTestLandingStrings } from '../../i18n/db-test-landing-strings';
-import { engineSample, runSetupSample } from '../../lib/upstream-snippets';
+import { customerTestsClass, engineTestClasses } from '../../lib/upstream-snippets';
+import SectionHead from '../shared/SectionHead.astro';
 import type { Locale } from '../shared/site';
 
 interface Props {
@@ -12,24 +15,147 @@ interface Props {
 
 const { locale } = Astro.props;
 const t = dbTestLandingStrings[locale];
+
+// README order: PostgreSQL first.
+const tabs = [
+  { key: 'postgres', label: 'PostgreSQL', file: 'PostgresCustomerTests.cs', code: engineTestClasses.postgres },
+  { key: 'mssql', label: 'SQL Server', file: 'MsSqlCustomerTests.cs', code: engineTestClasses.mssql },
+  { key: 'mysql', label: 'MySQL', file: 'MySqlCustomerTests.cs', code: engineTestClasses.mysql },
+] as const;
 ---
 
-<section class="section sample" aria-labelledby="sample-title">
+<section id="sample" class="section" aria-labelledby="sample-title">
   <div class="container">
-    <div class="section__head">
-      <h2 id="sample-title">{t.sampleHeading}</h2>
-      <p>{t.sampleIntro}</p>
+    <SectionHead id="sample-title" kicker={t.sampleKicker} heading={t.sampleHeading} intro={t.sampleIntro} />
+    <div class="sample">
+      <div class="sample__shared">
+        <CodeBlock locale={locale} id="sample-shared" code={customerTestsClass} lang="csharp" caption="CustomerTests.cs" regionLabel={t.sampleRegion} />
+      </div>
+      <div class="sample__engines term" data-engine-tabs>
+        <div class="sample__tablist" role="tablist" aria-label={t.engineTabsLabel} hidden>
+          {
+            tabs.map((tab, i) => (
+              <button type="button" role="tab" id={`tab-${tab.key}`} aria-controls={`panel-${tab.key}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1}>
+                <span class="engine-dot" data-engine={tab.key} aria-hidden="true" />
+                {tab.label}
+              </button>
+            ))
+          }
+        </div>
+        {
+          tabs.map((tab) => (
+            <div class="sample__panel" role="tabpanel" id={`panel-${tab.key}`} aria-labelledby={`tab-${tab.key}`}>
+              <CodeBlock locale={locale} id={`sample-${tab.key}`} code={tab.code} lang="csharp" caption={tab.file} regionLabel={`${t.sampleRegion}: ${tab.label}`} />
+            </div>
+          ))
+        }
+        <p class="sample__cost">{t.engineCost}</p>
+      </div>
     </div>
-    <CodeBlock locale={locale} id="engine-sample" code={engineSample} lang="csharp" caption="C#" regionLabel={t.sampleRegion} />
-    <p class="sample__setup">{t.runSetupCaption}</p>
-    <CodeBlock locale={locale} id="run-setup-sample" code={runSetupSample} lang="csharp" caption="C#" regionLabel={t.runSetupRegion} />
   </div>
 </section>
 
+<script>
+  // Turn the stacked engine panels into tabs. Runs once per page; one tab group per page.
+  document.querySelectorAll<HTMLElement>('[data-engine-tabs]').forEach((root) => {
+    const list = root.querySelector<HTMLElement>('[role="tablist"]');
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    if (!list || tabs.length === 0) return;
+    const select = (next: HTMLButtonElement, focus: boolean) => {
+      for (const tab of tabs) {
+        const on = tab === next;
+        tab.setAttribute('aria-selected', String(on));
+        tab.tabIndex = on ? 0 : -1;
+        const panel = document.getElementById(tab.getAttribute('aria-controls') ?? '');
+        if (panel) panel.hidden = !on;
+      }
+      if (focus) next.focus();
+    };
+    list.hidden = false;
+    select(tabs[0], false);
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => select(tab, false));
+      tab.addEventListener('keydown', (event) => {
+        const last = tabs.length - 1;
+        const to = { ArrowRight: i === last ? 0 : i + 1, ArrowLeft: i === 0 ? last : i - 1, Home: 0, End: last }[event.key];
+        if (to === undefined) return;
+        event.preventDefault();
+        select(tabs[to], true);
+      });
+    });
+  });
+</script>
+
 <style>
-  .sample__setup {
-    margin-block: 1.5rem 0.75rem;
-    font-weight: 600;
-    color: var(--sl-color-white);
+  .sample {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  .sample__shared {
+    flex: 3 1 34rem;
+    min-width: 0;
+    display: flex;
+  }
+  .sample__shared :global(.code-block) {
+    flex: 1;
+  }
+  .sample__engines {
+    flex: 2 1 24rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .sample__tablist:not([hidden]) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--term-line);
+    background: var(--term-bar);
+  }
+  .sample__tablist button {
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--term-text);
+    font: 600 0.875rem var(--landing-font);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .sample__tablist button:hover {
+    color: var(--term-bright);
+  }
+  .sample__tablist button[aria-selected='true'] {
+    border-color: #3a4254;
+    background: #1e2433;
+    color: var(--term-bright);
+  }
+  .sample__tablist .engine-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 2px;
+  }
+  /* Panels sit flush inside the outer frame. */
+  .sample__panel :global(.code-block) {
+    border: 0;
+    border-radius: 0;
+  }
+  .sample__panel + .sample__panel :global(.code-block) {
+    border-top: 1px solid var(--term-line);
+  }
+  .sample__cost {
+    margin-top: auto;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--term-line);
+    font-size: 0.875rem;
+    color: var(--term-text);
   }
 </style>

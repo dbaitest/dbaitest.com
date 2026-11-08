@@ -1,17 +1,20 @@
 ---
 // The db-test product landing page for one locale. Project facts (repo, NuGet package, pinned
-// release) come from projects.json; copy comes from the typed dictionary.
+// release) come from projects.json; copy comes from the typed dictionary; code comes from the
+// pinned README.
 import projects from '../../../projects.json';
 import LandingLayout from '../../layouts/LandingLayout.astro';
 import { dbTestLandingStrings } from '../../i18n/db-test-landing-strings';
 import { siteStrings } from '../../i18n/hub-strings';
 import SiteFooter from '../shared/SiteFooter.astro';
-import { dacpacSampleUrl } from '../../lib/upstream-snippets';
+import { dacpacSampleUrl, primaryInstallCommand } from '../../lib/upstream-snippets';
 import { localePath, type Locale } from '../shared/site';
 import EngineCodeSample from './EngineCodeSample.astro';
 import FeatureGrid from './FeatureGrid.astro';
 import Hero from './Hero.astro';
 import HowItWorks from './HowItWorks.astro';
+import InstallBlock from './InstallBlock.astro';
+import ShapeGuardSpotlight from './ShapeGuardSpotlight.astro';
 
 interface Props {
   locale: Locale;
@@ -25,6 +28,7 @@ const repoUrl = `https://github.com/${repo}`;
 
 const DOCS_PATH = '/db-test/docs/';
 const GETTING_STARTED_PATH = '/db-test/docs/getting-started/';
+const SHAPE_GUARD_PATH = '/db-test/docs/shape-guard/';
 ---
 
 <LandingLayout
@@ -34,22 +38,48 @@ const GETTING_STARTED_PATH = '/db-test/docs/getting-started/';
   path="/db-test/"
   ogImage="/db-test/og.png"
   ogImageAlt={t.ogAlt}
+  project={{ name: 'db-test', release: ref, href: localePath(locale, '/db-test/') }}
   nav={[
+    { label: t.navWhy, href: '#why' },
+    { label: t.navExample, href: '#sample' },
+    { label: t.navHow, href: '#how' },
     { label: t.navDocs, href: localePath(locale, DOCS_PATH) },
     { label: site.github, href: repoUrl },
   ]}
 >
   <main id="main">
-    <Hero locale={locale} ctaHref={localePath(locale, GETTING_STARTED_PATH)} repoUrl={repoUrl} release={ref} />
-    <EngineCodeSample locale={locale} />
+    <Hero locale={locale} ctaHref={localePath(locale, GETTING_STARTED_PATH)} repoUrl={repoUrl} />
     <FeatureGrid locale={locale} />
+    <EngineCodeSample locale={locale} />
+    <InstallBlock locale={locale} />
     <HowItWorks locale={locale} />
-    <section class="section" aria-labelledby="dacpac-title">
+    <ShapeGuardSpotlight locale={locale} docsHref={localePath(locale, SHAPE_GUARD_PATH)} />
+
+    <section class="dacpac-section" aria-labelledby="dacpac-title">
       <div class="container">
         <div class="dacpac">
-          <h2 id="dacpac-title">{t.dacpacHeading}</h2>
-          <p>{t.dacpacBody}</p>
-          <p><a href={dacpacSampleUrl}>{t.dacpacLink}</a></p>
+          <div class="dacpac__copy">
+            <div class="dacpac__head">
+              <span class="engine-dot" data-engine="mssql" aria-hidden="true"></span>
+              <h2 id="dacpac-title">{t.dacpacHeading}</h2>
+              <code class="dacpac__pkg">DbTest.MsSql.Dacpac</code>
+            </div>
+            <p>{t.dacpacBody}</p>
+          </div>
+          <a class="button" href={dacpacSampleUrl}>{t.dacpacLink}</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="cta-title">
+      <div class="container">
+        <div class="cta">
+          <h2 id="cta-title">{t.ctaHeading}</h2>
+          <code class="cta__command"><span aria-hidden="true">$ </span>{primaryInstallCommand}</code>
+          <div class="cta__actions">
+            <a class="cta__button cta__button--solid" href={localePath(locale, DOCS_PATH)}>{t.ctaDocs}</a>
+            <a class="cta__button" href={repoUrl}>{t.viewOnGitHub}</a>
+          </div>
         </div>
       </div>
     </section>
@@ -68,16 +98,107 @@ const GETTING_STARTED_PATH = '/db-test/docs/getting-started/';
 </LandingLayout>
 
 <style>
+  .dacpac-section {
+    padding-block: 1rem;
+  }
   .dacpac {
-    display: grid;
-    gap: 0.75rem;
-    max-width: 48rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
     padding: clamp(1.5rem, 4vw, 2.25rem);
-    border: 1px solid var(--sl-color-text-accent);
-    border-radius: 0.875rem;
-    background: var(--sl-color-accent-low);
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 1.125rem;
+    background: var(--landing-surface-2);
+  }
+  .dacpac__copy {
+    flex: 1 1 32rem;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+  .dacpac__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.625rem;
   }
   .dacpac h2 {
-    font-size: clamp(1.4rem, 3.5vw, 1.75rem);
+    font-size: 1.375rem;
+  }
+  .dacpac__pkg {
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.375rem;
+    background: var(--landing-surface);
+    border: 1px solid var(--sl-color-hairline);
+    font-size: 0.75rem;
+  }
+  .dacpac p {
+    color: var(--landing-muted);
+  }
+
+  /* Closing call to action: the one lime panel on the page, dark text in both themes. */
+  .cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: clamp(2.5rem, 7vw, 4rem) clamp(1.25rem, 4vw, 2rem);
+    border-radius: 1.5rem;
+    background: var(--dt-accent-fill);
+    color: var(--dt-on-accent);
+    text-align: center;
+  }
+  .cta h2 {
+    max-width: 48rem;
+    color: var(--dt-on-accent);
+    font-size: clamp(2rem, 4.4vw, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+  }
+  .cta__command {
+    max-width: 100%;
+    padding: 0.75rem 1.125rem;
+    border-radius: 0.625rem;
+    background: var(--term-bg);
+    color: var(--term-bright);
+    font-size: 0.9375rem;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .cta__command span {
+    color: var(--term-dim);
+  }
+  .cta__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+  .cta__button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 3rem;
+    padding: 0 1.5rem;
+    border: 2px solid var(--dt-on-accent);
+    border-radius: 0.625rem;
+    color: var(--dt-on-accent);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .cta__button:hover {
+    background: rgb(10 12 16 / 0.08);
+  }
+  .cta__button--solid {
+    background: var(--dt-on-accent);
+    color: #eceef3;
+  }
+  .cta__button--solid:hover {
+    background: #1a1f2a;
+  }
+  .cta :focus-visible {
+    outline-color: var(--dt-on-accent);
   }
 </style>

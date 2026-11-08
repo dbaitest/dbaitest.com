@@ -23,5 +23,5 @@ plans/
 .DS_Store
 Thumbs.db
 
-# Local agent memory written by review/test tooling
-.claude/agent-memory/
+# Local Claude Code config, launch configs and agent memory
+.claude/

@@ -1,6 +1,7 @@
 ---
-// Highlighted code panel (Shiki at build time, both themes via CSS variables) with a caption
-// and a copy button. The scroll area is focusable so keyboard users can scroll long lines.
+// Highlighted code panel (Shiki at build time) with a caption and a copy button. Panels are
+// "terminals": dark in both themes, so only Shiki's dark colours are used. The scroll area is
+// focusable so keyboard users can scroll long lines.
 import { Code } from 'astro:components';
 import CopyCommand from './CopyCommand.astro';
 import { siteStrings } from '../../i18n/hub-strings';
@@ -13,66 +14,47 @@ interface Props {
   lang: 'bash' | 'csharp';
   /** Short caption shown in the panel header, e.g. `bash` or `C#`. */
   caption: string;
+  /** Muted text after the caption, e.g. "once per test project". */
+  note?: string;
   /** Accessible name of the scrollable code region. */
   regionLabel: string;
 }
 
-const { locale, id, code, lang, caption, regionLabel } = Astro.props;
+const { locale, id, code, lang, caption, note, regionLabel } = Astro.props;
 const strings = siteStrings[locale];
 ---
 
-<figure class="code-block">
-  <figcaption class="code-block__bar">
-    <span class="code-block__lang">{caption}</span>
+<figure class="term code-block">
+  <figcaption class="term__bar">
+    <span>{caption}{note && <span class="code-block__note"> · {note}</span>}</span>
     <CopyCommand target={id} copy={strings.copyCode} copied={strings.copied} failed={strings.copyFailed} />
   </figcaption>
   <div class="code-block__scroll" id={id} tabindex="0" role="region" aria-label={regionLabel}>
-    <Code code={code} lang={lang} themes={{ light: 'github-light-high-contrast', dark: 'github-dark-high-contrast' }} defaultColor={false} />
+    <Code code={code} lang={lang} theme="github-dark-high-contrast" />
   </div>
 </figure>
 
 <style>
   .code-block {
-    margin: 0;
-    min-width: 0;
-    border: 1px solid var(--sl-color-hairline);
-    border-radius: 0.75rem;
-    background: var(--landing-code-bg);
-    overflow: hidden;
-  }
-  .code-block__bar {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    min-height: 2.75rem;
-    padding: 0.25rem 0.75rem 0.25rem 1rem;
-    border-bottom: 1px solid var(--sl-color-hairline);
-    background: var(--sl-color-bg-surface);
+    flex-direction: column;
   }
-  .code-block__lang {
-    font-family: var(--landing-mono);
-    font-size: 0.8125rem;
-    color: var(--sl-color-text);
+  .code-block__note {
+    color: var(--term-dim);
   }
   .code-block__scroll {
+    flex: 1;
     overflow: auto;
-    max-height: 32rem;
+    max-height: 34rem;
   }
   .code-block__scroll :global(pre.astro-code) {
     margin: 0;
-    padding: 1rem 1.25rem;
-    background: transparent;
+    padding: 1.375rem 1.5rem;
+    background: transparent !important;
     font-family: var(--landing-mono);
     font-size: 0.8125rem;
-    line-height: 1.7;
+    line-height: 1.75;
     width: max-content;
     min-width: 100%;
-  }
-  .code-block__scroll :global(pre.astro-code span) {
-    color: var(--shiki-dark);
-  }
-  :global(html.landing[data-theme='light']) .code-block__scroll :global(pre.astro-code span) {
-    color: var(--shiki-light);
   }
 </style>

@@ -1,0 +1,148 @@
+---
+// Header of the hub and the landing pages: mark + wordmark, an optional project crumb with its
+// release, the page nav, and a pill that switches to the same page in the other language.
+import { siteStrings } from '../../i18n/hub-strings';
+import LogoMark from './LogoMark.astro';
+import { localePath, otherLocale, type Link, type Locale } from './site';
+
+interface Props {
+  locale: Locale;
+  /** Locale-independent page path, for the language pill. */
+  path: string;
+  nav: Link[];
+  project?: { name: string; release: string; href: string };
+}
+
+const { locale, path, nav, project } = Astro.props;
+const strings = siteStrings[locale];
+const target = otherLocale(locale);
+---
+
+<header class="site-header">
+  <div class="container site-header__inner">
+    <div class="site-header__brand">
+      <a class="wordmark" href={localePath(locale, '/')}><LogoMark size={28} />dbaitest</a>
+      {
+        project && (
+          <>
+            <span class="site-header__sep" aria-hidden="true">/</span>
+            <a class="site-header__project" href={project.href}>{project.name}</a>
+            <span class="site-header__release">{project.release}</span>
+          </>
+        )
+      }
+    </div>
+    <nav class="site-header__nav" aria-label={strings.navLabel}>
+      <ul class="site-nav">
+        {
+          nav.map((item) => (
+            <li>
+              <a href={item.href}>{item.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+      <a class="lang-pill" href={localePath(target, path)} hreflang={target}>
+        <span aria-hidden="true">{locale.toUpperCase()} · <span class="lang-pill__other">{target.toUpperCase()}</span></span>
+        <span class="visually-hidden" lang={target}>{siteStrings[target].languageName}</span>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    border-bottom: 1px solid var(--sl-color-hairline);
+    background: var(--sl-color-bg);
+  }
+  .site-header__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    min-height: 4.25rem;
+    padding-block: 0.5rem;
+  }
+  .site-header__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+  }
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    color: var(--landing-heading);
+    font-family: var(--landing-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+  .site-header__sep {
+    color: var(--landing-faint);
+  }
+  .site-header__project {
+    color: var(--landing-heading);
+    font-family: var(--landing-mono);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .site-header__release {
+    padding: 0.0625rem 0.5rem;
+    border: 1px solid var(--landing-line-strong);
+    border-radius: 999px;
+    font-family: var(--landing-mono);
+    font-size: 0.6875rem;
+    color: var(--landing-muted);
+  }
+  .site-header__nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.75rem;
+  }
+  .site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .site-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border-radius: 0.5rem;
+    color: var(--sl-color-text);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .site-nav a:hover {
+    color: var(--landing-heading);
+    background: var(--landing-surface);
+  }
+  .lang-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.25rem;
+    padding: 0 0.875rem;
+    border: 1px solid var(--landing-line-strong);
+    border-radius: 999px;
+    color: var(--landing-heading);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .lang-pill:hover {
+    border-color: var(--sl-color-text-accent);
+  }
+  .lang-pill__other {
+    color: var(--landing-faint);
+  }
+</style>

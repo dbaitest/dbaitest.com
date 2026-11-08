@@ -1,0 +1,85 @@
+---
+// Hero illustration of the hub: a `dotnet test` run of the README's three-engine sample. The
+// output is illustrative and stays in English like all CLI text; screen readers get the
+// localized summary in `label` instead of the drawing.
+interface Props {
+  label: string;
+}
+
+const { label } = Astro.props;
+---
+
+<figure class="term run-panel">
+  <figcaption class="visually-hidden">{label}</figcaption>
+  <div class="term__bar run-panel__bar" aria-hidden="true">
+    <span class="run-panel__lights"><span></span><span></span><span></span></span>
+    <span class="run-panel__title">Shop.Tests · dotnet test</span>
+  </div>
+  <pre class="term__body run-panel__body" aria-hidden="true"><span class="dim">$</span> dotnet test
+<span class="dim">  Starting containers on first use…</span>
+  <span class="pg">●</span> postgres     <span class="ok">ready</span>
+  <span class="ms">●</span> mssql        <span class="ok">ready</span>
+  <span class="my">●</span> mysql        <span class="ok">ready</span>
+
+<span class="bright">▸ CustomerTests.Inserted_Customer_Should_Be_Counted</span>
+  <span class="ok">✓</span> PostgresCustomerTests   <span class="ok">passed</span>
+  <span class="ok">✓</span> MsSqlCustomerTests      <span class="ok">passed</span>
+  <span class="ok">✓</span> MySqlCustomerTests      <span class="ok">passed</span>
+
+<span class="dim">  Shape guard: no shared object reshaped</span>
+<span class="dim">  Containers removed.</span>
+
+<span class="pass">Passed!</span> 3 passed · 0 failed</pre>
+</figure>
+
+<style>
+  .run-panel {
+    box-shadow: var(--landing-shadow);
+    border-radius: 0.875rem;
+  }
+  .run-panel__bar {
+    justify-content: flex-start;
+    gap: 0.75rem;
+    padding-inline: 1rem;
+  }
+  .run-panel__lights {
+    display: inline-flex;
+    gap: 0.5rem;
+  }
+  .run-panel__lights span {
+    width: 0.6875rem;
+    height: 0.6875rem;
+    border-radius: 50%;
+    background: #2e3546;
+  }
+  .run-panel__title {
+    font-size: 0.75rem;
+    color: var(--term-dim);
+  }
+  .run-panel__body {
+    font-size: 0.84375rem;
+    line-height: 1.85;
+  }
+  .dim {
+    color: var(--term-dim);
+  }
+  .ok {
+    color: var(--term-ok);
+  }
+  .bright {
+    color: var(--term-bright);
+  }
+  .pass {
+    color: var(--dt-accent-fill);
+    font-weight: 700;
+  }
+  .pg {
+    color: var(--dt-engine-postgres);
+  }
+  .ms {
+    color: var(--dt-engine-mssql);
+  }
+  .my {
+    color: var(--dt-engine-mysql);
+  }
+</style>

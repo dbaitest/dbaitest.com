@@ -1,0 +1,152 @@
+---
+// Hero illustration: the one abstract test class fanning out to an engine container each.
+// Drawn with boxes and rules, announced as one image with a localized description.
+import { dbTestLandingStrings } from '../../i18n/db-test-landing-strings';
+import { engineKey, type Locale } from '../shared/site';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = dbTestLandingStrings[locale];
+---
+
+<div class="fanout" role="img" aria-label={t.fanoutLabel}>
+  <div class="fanout__root" aria-hidden="true">
+    <span class="fanout__kind">{t.fanoutKind}</span>
+    <span class="fanout__class">CustomerTests</span>
+    <span class="fanout__note">{t.fanoutNote}</span>
+  </div>
+  <div class="fanout__wires" aria-hidden="true">
+    <span class="fanout__stem"></span>
+    <span class="fanout__bus"></span>
+    <span class="fanout__drops"><span></span><span></span><span></span></span>
+  </div>
+  <ul class="fanout__engines" aria-hidden="true">
+    {
+      t.engines.map((engine) => (
+        <li class="fanout__engine" data-engine={engineKey(engine)}>
+          <span class="fanout__name">{engine}</span>
+          <span class="fanout__container">{t.fanoutContainer}</span>
+          <span class="fanout__passed">✓ {t.fanoutPassed}</span>
+        </li>
+      ))
+    }
+  </ul>
+  <p class="fanout__end" aria-hidden="true">{t.fanoutEnd}</p>
+</div>
+
+<style>
+  .fanout {
+    flex: 1 1 24rem;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .fanout__root {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min(100%, 22.5rem);
+    padding: 1.125rem 1.25rem;
+    border: 1px solid var(--sl-color-text-accent);
+    border-radius: 0.875rem;
+    background: var(--landing-surface);
+    box-shadow: var(--landing-shadow);
+    text-align: center;
+  }
+  .fanout__kind {
+    font-family: var(--landing-mono);
+    font-size: 0.75rem;
+    color: var(--landing-faint);
+  }
+  .fanout__class {
+    font-family: var(--landing-mono);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--landing-heading);
+  }
+  .fanout__note {
+    font-size: 0.8125rem;
+    color: var(--landing-muted);
+  }
+  .fanout__wires {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+  .fanout__stem {
+    width: 2px;
+    height: 1.75rem;
+    background: var(--landing-line-strong);
+  }
+  .fanout__bus {
+    width: 67%;
+    height: 2px;
+    background: var(--landing-line-strong);
+  }
+  .fanout__drops {
+    display: flex;
+    justify-content: space-between;
+    width: 67%;
+  }
+  .fanout__drops span {
+    width: 2px;
+    height: 1.75rem;
+    background: var(--landing-line-strong);
+  }
+  .fanout__engines {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .fanout__engine {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 1rem 0.5rem;
+    border: 1px solid var(--landing-line-strong);
+    border-top: 3px solid var(--engine-color);
+    border-radius: 0.75rem;
+    background: var(--landing-surface-2);
+    text-align: center;
+  }
+  .fanout__engine[data-engine='mssql'] {
+    --engine-color: var(--dt-engine-mssql);
+  }
+  .fanout__engine[data-engine='postgres'] {
+    --engine-color: var(--dt-engine-postgres);
+  }
+  .fanout__engine[data-engine='mysql'] {
+    --engine-color: var(--dt-engine-mysql);
+  }
+  .fanout__name {
+    font-family: var(--landing-display);
+    font-weight: 600;
+    color: var(--landing-heading);
+  }
+  .fanout__container {
+    font-family: var(--landing-mono);
+    font-size: 0.6875rem;
+    color: var(--landing-faint);
+  }
+  .fanout__passed {
+    font-family: var(--landing-mono);
+    font-size: 0.75rem;
+    color: var(--landing-ok);
+  }
+  .fanout__end {
+    margin-top: 1.125rem;
+    font-family: var(--landing-mono);
+    font-size: 0.75rem;
+    color: var(--landing-faint);
+  }
+</style>

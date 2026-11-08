@@ -1,9 +1,16 @@
 ---
-// One project on the hub. All data arrives as props: nothing here is project-specific.
+// One project on the hub: name, release, tagline, engine tags, highlights and actions, plus an
+// optional code preview in the right-hand panel. All data arrives as props: nothing here is
+// project-specific.
+import CodeBlock from './CodeBlock.astro';
+import { engineKey, type Locale } from './site';
+
 interface Props {
+  locale: Locale;
   name: string;
   tagline: string;
   tags: string[];
+  highlights: string[];
   /** Pinned release of the project, shown as a version chip. */
   release: string;
   releaseLabel: string;
@@ -11,56 +18,105 @@ interface Props {
   overviewLabel: string;
   docsHref: string;
   docsLabel: string;
+  sourceHref: string;
+  sourceLabel: string;
+  preview?: { code: string; caption: string; regionLabel: string };
 }
 
-const { name, tagline, tags, release, releaseLabel, overviewHref, overviewLabel, docsHref, docsLabel } = Astro.props;
+const { locale, name, tagline, tags, highlights, release, releaseLabel, overviewHref, overviewLabel, docsHref, docsLabel, sourceHref, sourceLabel, preview } =
+  Astro.props;
 ---
 
-<article class="card">
-  <header class="card__head">
-    <h3 class="card__name"><a href={overviewHref}>{name}</a></h3>
-    <p class="card__release"><span class="card__release-label">{releaseLabel}</span> <code>{release}</code></p>
-  </header>
-  <p class="card__tagline">{tagline}</p>
-  <ul class="card__tags">
-    {tags.map((tag) => <li>{tag}</li>)}
-  </ul>
-  <div class="card__actions">
-    <a class="button button--primary" href={overviewHref}>{overviewLabel}</a>
-    <a class="button button--ghost" href={docsHref}>{docsLabel}</a>
+<article class="card" data-has-preview={preview ? '' : undefined}>
+  <div class="card__body">
+    <header class="card__head">
+      <h3 class="card__name"><a href={overviewHref}>{name}</a></h3>
+      <span class="card__release"><span class="visually-hidden">{releaseLabel} </span>{release}</span>
+    </header>
+    <p class="card__tagline">{tagline}</p>
+    <ul class="card__tags">
+      {
+        tags.map((tag) => (
+          <li>
+            <span class="engine-dot" data-engine={engineKey(tag)} aria-hidden="true" />
+            {tag}
+          </li>
+        ))
+      }
+    </ul>
+    {
+      highlights.length > 0 && (
+        <ul class="card__highlights">
+          {highlights.map((item) => (
+            <li>
+              <span class="card__arrow" aria-hidden="true">→</span>
+              {item}
+            </li>
+          ))}
+        </ul>
+      )
+    }
+    <div class="card__actions">
+      <a class="button button--primary" href={overviewHref}>{overviewLabel}</a>
+      <a class="button" href={docsHref}>{docsLabel}</a>
+      <a class="button button--quiet" href={sourceHref}>
+        {sourceLabel}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"></path></svg>
+      </a>
+    </div>
   </div>
+  {
+    preview && (
+      <div class="card__preview">
+        <CodeBlock locale={locale} id={`preview-${name}`} code={preview.code} lang="csharp" caption={preview.caption} regionLabel={preview.regionLabel} />
+      </div>
+    )
+  }
 </article>
 
 <style>
   .card {
     display: flex;
+    flex-wrap: wrap;
+    border: 1px solid var(--landing-line-strong);
+    border-radius: 1.125rem;
+    background: var(--landing-surface);
+    overflow: hidden;
+  }
+  .card__body {
+    flex: 1 1 26rem;
+    min-width: 0;
+    display: flex;
     flex-direction: column;
-    gap: 1rem;
-    padding: 1.5rem;
-    border: 1px solid var(--sl-color-hairline);
-    border-radius: 0.875rem;
-    background: var(--sl-color-bg-surface);
+    gap: 1.25rem;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
   }
   .card__head {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.25rem 1rem;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
   }
   .card__name {
     font-family: var(--landing-mono);
-    font-size: 1.5rem;
+    font-size: 1.875rem;
+    letter-spacing: -0.02em;
   }
   .card__name a {
     color: inherit;
     text-decoration: none;
   }
   .card__release {
-    font-size: 0.875rem;
+    padding: 0.125rem 0.625rem;
+    border: 1px solid var(--landing-line-strong);
+    border-radius: 999px;
+    font-family: var(--landing-mono);
+    font-size: 0.75rem;
+    color: var(--landing-heading);
   }
   .card__tagline {
-    font-size: 1.0625rem;
+    max-width: 34rem;
+    font-size: 1.125rem;
   }
   .card__tags {
     display: flex;
@@ -71,16 +127,55 @@ const { name, tagline, tags, release, releaseLabel, overviewHref, overviewLabel,
     list-style: none;
   }
   .card__tags li {
-    padding: 0.125rem 0.625rem;
-    border: 1px solid var(--sl-color-gray-5);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.1875rem 0.75rem;
+    border: 1px solid var(--landing-line-strong);
     border-radius: 999px;
     font-size: 0.8125rem;
+    color: var(--landing-heading);
+  }
+  .card__tags .engine-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 2px;
+  }
+  .card__highlights {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.9375rem;
+    color: var(--landing-muted);
+  }
+  .card__highlights li {
+    display: flex;
+    gap: 0.625rem;
+  }
+  .card__arrow {
+    font-family: var(--landing-mono);
+    color: var(--sl-color-text-accent);
   }
   .card__actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 0.625rem;
     margin-top: auto;
-    padding-top: 0.5rem;
+    padding-top: 0.25rem;
+  }
+  .card__preview {
+    flex: 1 1 26rem;
+    min-width: 0;
+    display: flex;
+    background: var(--term-bg);
+    border-inline-start: 1px solid var(--term-line);
+  }
+  .card__preview :global(.code-block) {
+    flex: 1;
+    border: 0;
+    border-radius: 0;
   }
 </style>

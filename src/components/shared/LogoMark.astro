@@ -1,0 +1,29 @@
+---
+// The dbaitest mark: a database cylinder with a passing check. Decorative: the wordmark next
+// to it carries the name.
+interface Props {
+  size?: number;
+}
+
+const { size = 30 } = Astro.props;
+---
+
+<svg class="logo-mark" width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
+  <g class="logo-mark__db" stroke-width="2">
+    <ellipse cx="14" cy="8" rx="10" ry="4"></ellipse>
+    <path d="M4 8v14c0 2.2 4.5 4 10 4M24 8v7M4 15c0 2.2 4.5 4 10 4"></path>
+  </g>
+  <path class="logo-mark__check" d="M18 23l3.5 3.5L29 19" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+
+<style>
+  .logo-mark {
+    flex: none;
+  }
+  .logo-mark__db {
+    stroke: var(--landing-heading);
+  }
+  .logo-mark__check {
+    stroke: var(--sl-color-text-accent);
+  }
+</style>
