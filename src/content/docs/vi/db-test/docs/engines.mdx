@@ -11,12 +11,12 @@ Engine là nơi duy nhất db-test biết đến một sản phẩm cơ sở d�
 
 | | SQL Server | PostgreSQL | MySQL |
 |---|---|---|---|
-| Package | `DbTest.MsSql` | `DbTest.PostgreSql` | `DbTest.MySql` |
+| Package | `DbAiTest.MsSql` | `DbAiTest.PostgreSql` | `DbAiTest.MySql` |
 | Class | `MsSqlEngine` | `PostgreSqlEngine` | `MySqlEngine` |
-| Namespace | `DbTest.MsSql` | `DbTest.PostgreSql` | `DbTest.MySql` |
+| Namespace | `DbAiTest.MsSql` | `DbAiTest.PostgreSql` | `DbAiTest.MySql` |
 | Tên (CLI, báo cáo) | `mssql` | `postgres` | `mysql` |
 | Image mặc định | `mcr.microsoft.com/mssql/server:2022-latest` | `postgres:16-alpine` | `mysql:8.4` |
-| Tài khoản đăng nhập | luôn là `sa` | `dbtest` | `dbtest` |
+| Tài khoản đăng nhập | luôn là `sa` | `dbaitest` | `dbaitest` |
 
 Mỗi engine cũng cung cấp image của nó dưới dạng hằng số: `MsSqlEngine.DefaultContainerImage`, `PostgreSqlEngine.DefaultContainerImage` và `MySqlEngine.DefaultContainerImage`.
 
@@ -46,12 +46,12 @@ Mỗi engine cũng cung cấp image của nó dưới dạng hằng số: `MsSql
 
 ## Tùy chọn container
 
-Override `ContainerOptions` trong class `DbTestBase`, hoặc truyền một `DbContainerOptions` vào `DbTestHarness.StartAsync`. Mọi property đều có giá trị mặc định, nên `null` nghĩa là dùng mặc định của engine.
+Override `ContainerOptions` trong class `DbAiTestBase`, hoặc truyền một `DbContainerOptions` vào `DbAiTestHarness.StartAsync`. Mọi property đều có giá trị mặc định, nên `null` nghĩa là dùng mặc định của engine.
 
 | Property | Mặc định | Ý nghĩa |
 |---|---|---|
 | `Image` | `DefaultImage` của engine | Container image. |
-| `Database` | `dbtest` | Tên database được tạo bên trong container. |
+| `Database` | `dbaitest` | Tên database được tạo bên trong container. |
 | `Username` | của riêng engine | Tài khoản đăng nhập bên trong container. |
 | `Password` | của riêng engine | Mật khẩu bên trong container. |
 | `StartupTimeout` | 3 phút | Thời gian chờ container sẵn sàng nhận kết nối. |

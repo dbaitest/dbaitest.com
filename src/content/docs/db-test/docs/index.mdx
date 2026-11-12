@@ -42,20 +42,20 @@ A database test suite has to solve the same handful of problems, and most teams 
 | How does the schema get there? | Schema files on disk, applied in order, with each engine's own splitting rules. |
 | A test dropped a column and the next test failed on it | The [shape guard](/db-test/docs/shape-guard/) fails the test that did it, naming the object and the change. |
 | One test's rows leaked into the next | [`CleanAsync()`](/db-test/docs/cleanup/) empties every table whatever the foreign keys, and resets identity counters. |
-| "The suite is slow" | [Per-test timings](/db-test/docs/diagnostics/) in a TSV file (`DBTEST_TIMING=1`). |
+| "The suite is slow" | [Per-test timings](/db-test/docs/diagnostics/) in a TSV file (`DBAITEST_TIMING=1`). |
 | The same assertions written three times | The engine sits behind one abstract class. |
 
 ## Packages
 
 | Package | Purpose |
 |---|---|
-| `DbTest.Core` | The engine-agnostic harness, without any test framework. |
-| `DbTest.MSTest` | `DbTestBase` and `DbTestRun` for MSTest. Brings `DbTest.Core`. |
-| `DbTest.MsSql` | The SQL Server engine. |
-| `DbTest.PostgreSql` | The PostgreSQL engine. |
-| `DbTest.MySql` | The MySQL engine. |
-| `DbTest.MsSql.Dacpac` | Deploys a SQL Server `.dacpac` as the schema. |
-| `DbTest.Cli` | The `dbtest` command-line tool. |
+| `DbAiTest.Core` | The engine-agnostic harness, without any test framework. |
+| `DbAiTest.MSTest` | `DbAiTestBase` and `DbAiTestRun` for MSTest. Brings `DbAiTest.Core`. |
+| `DbAiTest.MsSql` | The SQL Server engine. |
+| `DbAiTest.PostgreSql` | The PostgreSQL engine. |
+| `DbAiTest.MySql` | The MySQL engine. |
+| `DbAiTest.MsSql.Dacpac` | Deploys a SQL Server `.dacpac` as the schema. |
+| `DbAiTest.Cli` | The `dbaitest` command-line tool. |
 
 ## Where to go next
 

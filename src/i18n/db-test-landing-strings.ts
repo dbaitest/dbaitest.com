@@ -123,7 +123,7 @@ export const dbTestLandingStrings: Localized<DbTestLandingStrings> = {
       {
         problem: '"The suite is slow"',
         title: 'Per-test timings',
-        body: 'Set DBTEST_TIMING=1 to write per-test timings to a TSV file. Off by default.',
+        body: 'Set DBAITEST_TIMING=1 to write per-test timings to a TSV file. Off by default.',
       },
       {
         problem: 'The same assertions written three times',
@@ -139,7 +139,7 @@ export const dbTestLandingStrings: Localized<DbTestLandingStrings> = {
     engineCost: 'Two overrides: that is the whole cost of another engine.',
     installKicker: 'install',
     installHeading: 'The MSTest base class, plus an engine package for each database you test against.',
-    installNote: 'DbTest.Core alone gives the harness without any test framework.',
+    installNote: 'DbAiTest.Core alone gives the harness without any test framework.',
     installRegion: 'Install commands',
     runSetupCaption: 'once per test project',
     runSetupRegion: 'C# example: once per test project',
@@ -148,7 +148,7 @@ export const dbTestLandingStrings: Localized<DbTestLandingStrings> = {
     steps: [
       {
         title: 'Install',
-        body: 'Add DbTest.MSTest and an engine package for each database. Docker must be running.',
+        body: 'Add DbAiTest.MSTest and an engine package for each database. Docker must be running.',
       },
       {
         title: 'Point it at a schema',
@@ -156,7 +156,7 @@ export const dbTestLandingStrings: Localized<DbTestLandingStrings> = {
       },
       {
         title: 'Write the tests once',
-        body: 'Derive from DbTestBase in an abstract class, then add one [TestClass] per engine.',
+        body: 'Derive from DbAiTestBase in an abstract class, then add one [TestClass] per engine.',
       },
       {
         title: 'Run dotnet test',
@@ -170,7 +170,7 @@ export const dbTestLandingStrings: Localized<DbTestLandingStrings> = {
     guardRegion: 'Shape guard failure message',
     dacpacHeading: 'SQL Server database projects',
     dacpacBody:
-      'A database project (SSDT or Microsoft.Build.Sql) has objects that depend on each other across folders, so no file order applies them. DbTest.MsSql.Dacpac deploys the built .dacpac with DacFx, in dependency order.',
+      'A database project (SSDT or Microsoft.Build.Sql) has objects that depend on each other across folders, so no file order applies them. DbAiTest.MsSql.Dacpac deploys the built .dacpac with DacFx, in dependency order.',
     dacpacLink: 'See the sample project',
     ctaHeading: 'Stop mocking the database. Start testing it.',
     ctaDocs: 'Read the docs',
@@ -228,7 +228,7 @@ export const dbTestLandingStrings: Localized<DbTestLandingStrings> = {
       {
         problem: '"Bộ test chạy chậm"',
         title: 'Thời gian chạy từng test',
-        body: 'Đặt DBTEST_TIMING=1 để ghi thời gian từng test vào tệp TSV. Mặc định tắt.',
+        body: 'Đặt DBAITEST_TIMING=1 để ghi thời gian từng test vào tệp TSV. Mặc định tắt.',
       },
       {
         problem: 'Cùng các assertion phải viết ba lần',
@@ -244,7 +244,7 @@ export const dbTestLandingStrings: Localized<DbTestLandingStrings> = {
     engineCost: 'Hai override: đó là toàn bộ chi phí cho thêm một engine.',
     installKicker: 'cài đặt',
     installHeading: 'Lớp cơ sở (base class) cho MSTest, cùng một gói engine cho mỗi cơ sở dữ liệu bạn kiểm thử.',
-    installNote: 'Chỉ cần DbTest.Core là có harness, không phụ thuộc framework kiểm thử nào.',
+    installNote: 'Chỉ cần DbAiTest.Core là có harness, không phụ thuộc framework kiểm thử nào.',
     installRegion: 'Lệnh cài đặt',
     runSetupCaption: 'một lần cho mỗi test project',
     runSetupRegion: 'Ví dụ C#: một lần cho mỗi test project',
@@ -253,7 +253,7 @@ export const dbTestLandingStrings: Localized<DbTestLandingStrings> = {
     steps: [
       {
         title: 'Cài đặt',
-        body: 'Thêm DbTest.MSTest và một gói engine cho mỗi cơ sở dữ liệu. Docker phải đang chạy.',
+        body: 'Thêm DbAiTest.MSTest và một gói engine cho mỗi cơ sở dữ liệu. Docker phải đang chạy.',
       },
       {
         title: 'Trỏ đến schema',
@@ -261,7 +261,7 @@ export const dbTestLandingStrings: Localized<DbTestLandingStrings> = {
       },
       {
         title: 'Viết test một lần',
-        body: 'Kế thừa DbTestBase trong một abstract class, rồi thêm một [TestClass] cho mỗi engine.',
+        body: 'Kế thừa DbAiTestBase trong một abstract class, rồi thêm một [TestClass] cho mỗi engine.',
       },
       {
         title: 'Chạy dotnet test',
@@ -275,7 +275,7 @@ export const dbTestLandingStrings: Localized<DbTestLandingStrings> = {
     guardRegion: 'Thông báo lỗi của shape guard',
     dacpacHeading: 'Dự án cơ sở dữ liệu SQL Server',
     dacpacBody:
-      'Một dự án cơ sở dữ liệu (SSDT hoặc Microsoft.Build.Sql) có các đối tượng phụ thuộc lẫn nhau giữa các thư mục, nên không có thứ tự tệp nào áp dụng đúng được. DbTest.MsSql.Dacpac triển khai tệp .dacpac đã build bằng DacFx, theo thứ tự phụ thuộc.',
+      'Một dự án cơ sở dữ liệu (SSDT hoặc Microsoft.Build.Sql) có các đối tượng phụ thuộc lẫn nhau giữa các thư mục, nên không có thứ tự tệp nào áp dụng đúng được. DbAiTest.MsSql.Dacpac triển khai tệp .dacpac đã build bằng DacFx, theo thứ tự phụ thuộc.',
     dacpacLink: 'Xem dự án mẫu',
     ctaHeading: 'Đừng mock cơ sở dữ liệu nữa. Hãy kiểm thử nó.',
     ctaDocs: 'Đọc tài liệu',

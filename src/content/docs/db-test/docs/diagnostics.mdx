@@ -1,6 +1,6 @@
 ---
 title: Diagnostics
-description: Per-test timing output for db-test suites, switched on with DBTEST_TIMING=1 and written to a TSV file.
+description: Per-test timing output for db-test suites, switched on with DBAITEST_TIMING=1 and written to a TSV file.
 ---
 
 import { Code } from '@astrojs/starlight/components';
@@ -12,24 +12,24 @@ import { timingCommand } from '../../../../lib/upstream-snippets';
 
 <Code code={timingCommand} lang="bash" />
 
-With `DbTest.MSTest`, this writes one row per test to `dbtest-timing.tsv` next to the test binaries.
+With `DbAiTest.MSTest`, this writes one row per test to `dbaitest-timing.tsv` next to the test binaries.
 
 It is off by default: no file is written unless it is switched on, and only the exact value `1` switches it on.
 
 ## Choose the file
 
-Set `DBTEST_TIMING_FILE` to write somewhere else:
+Set `DBAITEST_TIMING_FILE` to write somewhere else:
 
 {/* not in upstream: illustrative */}
 
 ```bash
-DBTEST_TIMING=1 DBTEST_TIMING_FILE=timings.tsv dotnet test
+DBAITEST_TIMING=1 DBAITEST_TIMING_FILE=timings.tsv dotnet test
 ```
 
 | Variable | Effect |
 |---|---|
-| `DBTEST_TIMING` | `1` turns timing on. Anything else leaves it off. |
-| `DBTEST_TIMING_FILE` | Overrides the output path. Default: `dbtest-timing.tsv` next to the test binaries. |
+| `DBAITEST_TIMING` | `1` turns timing on. Anything else leaves it off. |
+| `DBAITEST_TIMING_FILE` | Overrides the output path. Default: `dbaitest-timing.tsv` next to the test binaries. |
 
 ## The file
 

@@ -12,7 +12,7 @@ Với schema không phải một thư mục file SQL, chẳng hạn database pro
 
 ## Trỏ vào một thư mục
 
-Trong class `DbTestBase`, override `SchemaRoot`. Đường dẫn tương đối được resolve theo thư mục của test binary.
+Trong class `DbAiTestBase`, override `SchemaRoot`. Đường dẫn tương đối được resolve theo thư mục của test binary.
 
 {/* not in upstream: illustrative */}
 
@@ -25,7 +25,7 @@ Hoặc khởi động harness trực tiếp:
 <Code code={schemaStartAsync} lang="csharp" />
 
 :::caution
-`DbTestHarness.StartAsync` resolve `schemaRoot` tương đối theo **thư mục hiện tại**, không phải thư mục của test binary. Chỉ `SchemaRoot` trong `DbTestBase` (và `DbTestRun.GetHarnessAsync`) mới resolve theo thư mục binary. Hãy truyền đường dẫn tuyệt đối, hoặc dựng từ `AppContext.BaseDirectory`, khi bạn tự gọi `StartAsync`.
+`DbAiTestHarness.StartAsync` resolve `schemaRoot` tương đối theo **thư mục hiện tại**, không phải thư mục của test binary. Chỉ `SchemaRoot` trong `DbAiTestBase` (và `DbAiTestRun.GetHarnessAsync`) mới resolve theo thư mục binary. Hãy truyền đường dẫn tuyệt đối, hoặc dựng từ `AppContext.BaseDirectory`, khi bạn tự gọi `StartAsync`.
 :::
 
 Copy các file vào cạnh test binary để `SchemaRoot` tương đối hoạt động:
@@ -68,7 +68,7 @@ Comment ở lại trong command chứa nó. Đoạn đuôi chỉ gồm comment v
 
 ## Loại trừ và sắp thứ tự file
 
-`SchemaLoadOptions` điều khiển việc phát hiện file. Override `SchemaLoadOptions` trong class `DbTestBase`, hoặc truyền nó vào harness.
+`SchemaLoadOptions` điều khiển việc phát hiện file. Override `SchemaLoadOptions` trong class `DbAiTestBase`, hoặc truyền nó vào harness.
 
 | Option | Tác dụng |
 |---|---|

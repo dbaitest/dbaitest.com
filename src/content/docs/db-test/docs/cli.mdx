@@ -1,12 +1,12 @@
 ---
 title: The CLI
-description: The dbtest command-line tool - list engines, start a throwaway database container with a schema applied, and inspect what a schema creates.
+description: The dbaitest command-line tool - list engines, start a throwaway database container with a schema applied, and inspect what a schema creates.
 ---
 
 import { Code } from '@astrojs/starlight/components';
 import { cliCommands, cliInstallCommand } from '../../../../lib/upstream-snippets';
 
-`dbtest` exposes the harness operations that are useful outside a test run: start a container with a schema applied, and inspect the result.
+`dbaitest` exposes the harness operations that are useful outside a test run: start a container with a schema applied, and inspect the result.
 
 ## Install
 
@@ -18,11 +18,11 @@ The CLI rolls forward, so it runs on whichever of .NET 8 or newer is installed. 
 
 <Code code={cliCommands} lang="bash" />
 
-### `dbtest engines`
+### `dbaitest engines`
 
 Lists the registered engines: `mssql`, `postgres` and `mysql`.
 
-### `dbtest up`
+### `dbaitest up`
 
 Starts a container, applies the schema, prints the connection string, and keeps the container running until you press Ctrl+C. A container that disappeared as soon as its connection string was printed would be of no use.
 
@@ -30,7 +30,7 @@ Starts a container, applies the schema, prints the connection string, and keeps 
 
 Ctrl+C stops the command and removes the container. The exit code is `0`.
 
-### `dbtest schema`
+### `dbaitest schema`
 
 Loads the schema directory, prints the scripts that will be applied and any excluded files, then starts a container, applies the schema, lists the objects it created, and removes the container.
 
@@ -56,7 +56,7 @@ Example output shape:
 | `--engine <name>` | `mssql`, `postgres` or `mysql`. |
 | `--schema <dir>` | Directory holding the schema files. |
 | `--image <image>` | Override the container image. |
-| `--database <name>` | Database name inside the container. Default: `dbtest`. |
+| `--database <name>` | Database name inside the container. Default: `dbaitest`. |
 | `--username <name>` | Login inside the container. Default: the engine's own. |
 | `--password <pass>` | Password inside the container. Default: the engine's own. |
 
@@ -72,7 +72,7 @@ The CLI applies a directory of SQL files. It does not deploy a `.dacpac`.
 
 | Code | Meaning |
 |---|---|
-| `0` | Success. This includes Ctrl+C on a running `dbtest up`, once its container is up. |
-| `1` | A failure such as Docker not running, a broken schema or a bad image. Reported as one `error:` line, not a stack trace. `dbtest` with no arguments also exits `1`: it prints the usage text to standard error, with no `error:` line. |
+| `0` | Success. This includes Ctrl+C on a running `dbaitest up`, once its container is up. |
+| `1` | A failure such as Docker not running, a broken schema or a bad image. Reported as one `error:` line, not a stack trace. `dbaitest` with no arguments also exits `1`: it prints the usage text to standard error, with no `error:` line. |
 | `2` | Usage error: unknown command or option, a missing value or a missing required option. The usage text follows the message. |
-| `130` | Cancelled with Ctrl+C before the command finished: while `dbtest up` is still starting the container or applying the schema, or while `dbtest schema` runs. The message is `Cancelled.`. |
+| `130` | Cancelled with Ctrl+C before the command finished: while `dbaitest up` is still starting the container or applying the schema, or while `dbaitest schema` runs. The message is `Cancelled.`. |

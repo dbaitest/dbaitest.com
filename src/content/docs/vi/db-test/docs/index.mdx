@@ -42,20 +42,20 @@ Bộ kiểm thử cơ sở dữ liệu nào cũng phải giải quyết cùng m�
 | Schema được đưa vào bằng cách nào? | Các file schema trên đĩa, áp dụng theo thứ tự, với quy tắc tách script riêng của từng engine. |
 | Một test xóa một cột và test sau đó lỗi vì cột ấy | [Shape guard](/vi/db-test/docs/shape-guard/) (bộ canh hình dạng schema) làm fail đúng test gây ra thay đổi, kèm tên object và thay đổi đó. |
 | Dữ liệu của test này rò sang test sau | [`CleanAsync()`](/vi/db-test/docs/cleanup/) làm trống mọi table bất kể foreign key, và đặt lại bộ đếm identity. |
-| "Bộ test chạy chậm" | [Thời gian chạy từng test](/vi/db-test/docs/diagnostics/) trong file TSV (`DBTEST_TIMING=1`). |
+| "Bộ test chạy chậm" | [Thời gian chạy từng test](/vi/db-test/docs/diagnostics/) trong file TSV (`DBAITEST_TIMING=1`). |
 | Cùng một assertion phải viết ba lần | Engine nằm sau một abstract class duy nhất. |
 
 ## Các package
 
 | Package | Mục đích |
 |---|---|
-| `DbTest.Core` | Harness không phụ thuộc engine, không gắn với framework test nào. |
-| `DbTest.MSTest` | `DbTestBase` và `DbTestRun` cho MSTest. Kéo theo `DbTest.Core`. |
-| `DbTest.MsSql` | Engine SQL Server. |
-| `DbTest.PostgreSql` | Engine PostgreSQL. |
-| `DbTest.MySql` | Engine MySQL. |
-| `DbTest.MsSql.Dacpac` | Deploy một `.dacpac` của SQL Server làm schema. |
-| `DbTest.Cli` | Công cụ dòng lệnh `dbtest`. |
+| `DbAiTest.Core` | Harness không phụ thuộc engine, không gắn với framework test nào. |
+| `DbAiTest.MSTest` | `DbAiTestBase` và `DbAiTestRun` cho MSTest. Kéo theo `DbAiTest.Core`. |
+| `DbAiTest.MsSql` | Engine SQL Server. |
+| `DbAiTest.PostgreSql` | Engine PostgreSQL. |
+| `DbAiTest.MySql` | Engine MySQL. |
+| `DbAiTest.MsSql.Dacpac` | Deploy một `.dacpac` của SQL Server làm schema. |
+| `DbAiTest.Cli` | Công cụ dòng lệnh `dbaitest`. |
 
 ## Đọc tiếp
 
