@@ -20,7 +20,7 @@ db-test's own CI runs its integration suite against all three engines. This is t
 
 **One step per runtime.** The packages ship `net8.0` and `net10.0` assets. The job tests both with `--framework`, in one job so the database image is pulled once, and installs both runtimes with `actions/setup-dotnet`.
 
-**Timings as an artifact.** `DBTEST_TIMING: "1"` turns on [the per-test timing file](/db-test/docs/diagnostics/). The last step uploads it for each engine, with `if: always()` so a failing run still reports its timings.
+**Timings as an artifact.** `DBAITEST_TIMING: "1"` turns on [the per-test timing file](/db-test/docs/diagnostics/). The last step uploads it for each engine, with `if: always()` so a failing run still reports its timings.
 
 :::tip
 Pin third-party actions to a full commit SHA, as the workflow does, with the release tag in a comment. A tag can be moved, a SHA cannot.

@@ -21,16 +21,16 @@ Nếu một file tham chiếu object do file khác tạo, kiểm tra [thứ tự
 
 Một đường dẫn tương đối được resolve ra thư mục không tồn tại. Có hai quy tắc:
 
-- `DbTestBase.SchemaRoot` resolve theo thư mục của test binary. Copy schema vào cạnh chúng bằng `<None Include="Schema\**\*" CopyToOutputDirectory="PreserveNewest" />`.
-- `DbTestHarness.StartAsync(schemaRoot: ...)`, `SchemaLoader.Load` và `SchemaSource` resolve theo **thư mục hiện tại**. Hãy truyền đường dẫn tuyệt đối, hoặc dựng từ `AppContext.BaseDirectory`.
+- `DbAiTestBase.SchemaRoot` resolve theo thư mục của test binary. Copy schema vào cạnh chúng bằng `<None Include="Schema\**\*" CopyToOutputDirectory="PreserveNewest" />`.
+- `DbAiTestHarness.StartAsync(schemaRoot: ...)`, `SchemaLoader.Load` và `SchemaSource` resolve theo **thư mục hiện tại**. Hãy truyền đường dẫn tuyệt đối, hoặc dựng từ `AppContext.BaseDirectory`.
 
 ### `Dacpac not found at '...'`
 
-Dacpac chưa được build hoặc chưa được copy vào cạnh các test. Đây là `DbTestException` được ném trước khi bất kỳ container nào khởi động, kèm đường dẫn đầy đủ mà nó đã tìm. Xem [Build và copy dacpac](/vi/db-test/docs/sql-server-database-projects/#build-và-copy-dacpac).
+Dacpac chưa được build hoặc chưa được copy vào cạnh các test. Đây là `DbAiTestException` được ném trước khi bất kỳ container nào khởi động, kèm đường dẫn đầy đủ mà nó đã tìm. Xem [Build và copy dacpac](/vi/db-test/docs/sql-server-database-projects/#build-và-copy-dacpac).
 
 ### `SchemaSource cannot be combined with SchemaRoot or SchemaLoadOptions`
 
-Một `InvalidOperationException` từ `DbTestBase`. Schema source mang theo vị trí và options của riêng nó. Chỉ override `SchemaSource`, hoặc dùng `DirectorySchemaSource` cho một thư mục.
+Một `InvalidOperationException` từ `DbAiTestBase`. Schema source mang theo vị trí và options của riêng nó. Chỉ override `SchemaSource`, hoặc dùng `DirectorySchemaSource` cho một thư mục.
 
 ### Deploy dacpac bị lỗi
 
@@ -50,11 +50,11 @@ Nó không hoạt động ở chế độ globalization invariant. Đừng bật
 
 ### CS0108 trên `SchemaSource`
 
-`DbTestBase` giờ có một member tên `SchemaSource`. Test class nào đã tự khai báo member cùng tên sẽ che member của base, và đó là lỗi khi bật `TreatWarningsAsErrors`. Hãy đổi tên member của bạn.
+`DbAiTestBase` giờ có một member tên `SchemaSource`. Test class nào đã tự khai báo member cùng tên sẽ che member của base, và đó là lỗi khi bật `TreatWarningsAsErrors`. Hãy đổi tên member của bạn.
 
 ### CS0121 trên `StartAsync` hoặc `GetHarnessAsync`
 
-Truyền literal `null` hoặc `default` làm đối số thứ hai của `DbTestHarness.StartAsync` hoặc `DbTestRun.GetHarnessAsync` không còn biên dịch được: lời gọi khớp với cả overload `string` và overload `SchemaSource`. Hãy bỏ đối số đó, hoặc viết `(string?)null`. Code đã biên dịch không bị ảnh hưởng.
+Truyền literal `null` hoặc `default` làm đối số thứ hai của `DbAiTestHarness.StartAsync` hoặc `DbAiTestRun.GetHarnessAsync` không còn biên dịch được: lời gọi khớp với cả overload `string` và overload `SchemaSource`. Hãy bỏ đối số đó, hoặc viết `(string?)null`. Code đã biên dịch không bị ảnh hưởng.
 
 ## Test fail
 

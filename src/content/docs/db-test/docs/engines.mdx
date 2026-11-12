@@ -11,12 +11,12 @@ An engine is the one place db-test knows a database product. Test code never men
 
 | | SQL Server | PostgreSQL | MySQL |
 |---|---|---|---|
-| Package | `DbTest.MsSql` | `DbTest.PostgreSql` | `DbTest.MySql` |
+| Package | `DbAiTest.MsSql` | `DbAiTest.PostgreSql` | `DbAiTest.MySql` |
 | Class | `MsSqlEngine` | `PostgreSqlEngine` | `MySqlEngine` |
-| Namespace | `DbTest.MsSql` | `DbTest.PostgreSql` | `DbTest.MySql` |
+| Namespace | `DbAiTest.MsSql` | `DbAiTest.PostgreSql` | `DbAiTest.MySql` |
 | Name (CLI, reports) | `mssql` | `postgres` | `mysql` |
 | Default image | `mcr.microsoft.com/mssql/server:2022-latest` | `postgres:16-alpine` | `mysql:8.4` |
-| Login | always `sa` | `dbtest` | `dbtest` |
+| Login | always `sa` | `dbaitest` | `dbaitest` |
 
 Each engine also exposes its image as a constant: `MsSqlEngine.DefaultContainerImage`, `PostgreSqlEngine.DefaultContainerImage` and `MySqlEngine.DefaultContainerImage`.
 
@@ -46,12 +46,12 @@ Each engine also exposes its image as a constant: `MsSqlEngine.DefaultContainerI
 
 ## Container options
 
-Override `ContainerOptions` in a `DbTestBase` class, or pass a `DbContainerOptions` to `DbTestHarness.StartAsync`. Every property has a default, so `null` means the engine defaults.
+Override `ContainerOptions` in a `DbAiTestBase` class, or pass a `DbContainerOptions` to `DbAiTestHarness.StartAsync`. Every property has a default, so `null` means the engine defaults.
 
 | Property | Default | Meaning |
 |---|---|---|
 | `Image` | the engine's `DefaultImage` | Container image. |
-| `Database` | `dbtest` | Database name created inside the container. |
+| `Database` | `dbaitest` | Database name created inside the container. |
 | `Username` | the engine's own | Login inside the container. |
 | `Password` | the engine's own | Password inside the container. |
 | `StartupTimeout` | 3 minutes | How long to wait for the container to accept connections. |

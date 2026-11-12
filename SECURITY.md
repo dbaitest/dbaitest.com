@@ -17,7 +17,7 @@ attacker run script on the site, change what it serves, or reach the deployment 
 — for example a gap in the Content Security Policy, a build step that executes untrusted
 input, or a workflow that exposes a secret to pull-request code.
 
-Vulnerabilities in a project the site documents (for example the `DbTest.*` packages) belong
+Vulnerabilities in a project the site documents (for example the `DbAiTest.*` packages) belong
 to that project's repository: see its own `SECURITY.md`.
 
 Dependencies are checked on every build: an npm package with a moderate or worse advisory,

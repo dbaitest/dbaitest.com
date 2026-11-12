@@ -1,6 +1,6 @@
 ---
 title: SQL Server database projects
-description: Test a SQL Server database project (SSDT or Microsoft.Build.Sql) by deploying its .dacpac into a throwaway container with DbTest.MsSql.Dacpac.
+description: Test a SQL Server database project (SSDT or Microsoft.Build.Sql) by deploying its .dacpac into a throwaway container with DbAiTest.MsSql.Dacpac.
 ---
 
 import { Code } from '@astrojs/starlight/components';
@@ -8,16 +8,16 @@ import { dacpacDatabaseProject, dacpacDefaultOptions, dacpacPostDeployment, dacp
 
 A SQL Server database project (SSDT, or the SDK-style `Microsoft.Build.Sql`) keeps one object per file. The objects depend on each other across folders, in both directions: a table in `dbo/Tables` has a computed column calling a function in `dbo/Functions`, which reads another table in `dbo/Tables`.
 
-No file order applies that, not even `OrderedDirectories`. The project builds into a `.dacpac`, and `DbTest.MsSql.Dacpac` deploys it with DacFx, in dependency order.
+No file order applies that, not even `OrderedDirectories`. The project builds into a `.dacpac`, and `DbAiTest.MsSql.Dacpac` deploys it with DacFx, in dependency order.
 
 {/* not in upstream: illustrative */}
 
 ```bash
-dotnet add package DbTest.MsSql.Dacpac
+dotnet add package DbAiTest.MsSql.Dacpac
 ```
 
 :::note
-`DacpacSchemaSource` deploys to SQL Server only. With any other engine, setup throws a `DbTestException` before a container starts.
+`DacpacSchemaSource` deploys to SQL Server only. With any other engine, setup throws a `DbAiTestException` before a container starts.
 :::
 
 ## Use the dacpac as the schema
@@ -52,7 +52,7 @@ Put the `Microsoft.Build.Sql` version in `global.json` under `msbuild-sdks`, and
 
 ### A missing dacpac fails before any container starts
 
-The source checks its configuration before the container starts, so a mistake fails in milliseconds instead of after an image pull and a server boot. A missing dacpac throws a `DbTestException` with the full path it looked for:
+The source checks its configuration before the container starts, so a mistake fails in milliseconds instead of after an image pull and a server boot. A missing dacpac throws a `DbAiTestException` with the full path it looked for:
 
 {/* not in upstream: illustrative */}
 

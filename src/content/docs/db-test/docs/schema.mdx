@@ -12,7 +12,7 @@ For a schema that is not a directory of SQL files, such as a SQL Server database
 
 ## Pointing at a directory
 
-In a `DbTestBase` class, override `SchemaRoot`. A relative path resolves against the test binaries' directory.
+In a `DbAiTestBase` class, override `SchemaRoot`. A relative path resolves against the test binaries' directory.
 
 {/* not in upstream: illustrative */}
 
@@ -25,7 +25,7 @@ Or start a harness directly:
 <Code code={schemaStartAsync} lang="csharp" />
 
 :::caution
-`DbTestHarness.StartAsync` resolves a relative `schemaRoot` against the **current directory**, not the test binaries' directory. Only `SchemaRoot` in `DbTestBase` (and `DbTestRun.GetHarnessAsync`) resolves against the binaries. Pass an absolute path, or build one from `AppContext.BaseDirectory`, when you call `StartAsync` yourself.
+`DbAiTestHarness.StartAsync` resolves a relative `schemaRoot` against the **current directory**, not the test binaries' directory. Only `SchemaRoot` in `DbAiTestBase` (and `DbAiTestRun.GetHarnessAsync`) resolves against the binaries. Pass an absolute path, or build one from `AppContext.BaseDirectory`, when you call `StartAsync` yourself.
 :::
 
 Copy the files next to the test binaries so a relative `SchemaRoot` works:
@@ -68,7 +68,7 @@ Comments stay in the command they belong to. A trailing piece that holds only co
 
 ## Excluding and ordering files
 
-`SchemaLoadOptions` controls discovery. Override `SchemaLoadOptions` in a `DbTestBase` class, or pass it to the harness.
+`SchemaLoadOptions` controls discovery. Override `SchemaLoadOptions` in a `DbAiTestBase` class, or pass it to the harness.
 
 | Option | Effect |
 |---|---|

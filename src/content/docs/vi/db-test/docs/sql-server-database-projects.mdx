@@ -1,6 +1,6 @@
 ---
 title: Database project của SQL Server
-description: Kiểm thử database project (dự án cơ sở dữ liệu) của SQL Server (SSDT hoặc Microsoft.Build.Sql) bằng cách deploy file .dacpac của nó vào container dùng một lần với DbTest.MsSql.Dacpac.
+description: Kiểm thử database project (dự án cơ sở dữ liệu) của SQL Server (SSDT hoặc Microsoft.Build.Sql) bằng cách deploy file .dacpac của nó vào container dùng một lần với DbAiTest.MsSql.Dacpac.
 ---
 
 import { Code } from '@astrojs/starlight/components';
@@ -8,16 +8,16 @@ import { dacpacDatabaseProject, dacpacDefaultOptions, dacpacPostDeployment, dacp
 
 Một database project (dự án cơ sở dữ liệu) của SQL Server (SSDT, hoặc `Microsoft.Build.Sql` kiểu SDK) lưu mỗi object trong một file. Các object phụ thuộc lẫn nhau giữa các thư mục, theo cả hai chiều: một table trong `dbo/Tables` có computed column gọi một function trong `dbo/Functions`, và function đó đọc một table khác trong `dbo/Tables`.
 
-Không thứ tự file nào áp dụng được schema như vậy, kể cả `OrderedDirectories`. Project build ra một `.dacpac`, và `DbTest.MsSql.Dacpac` deploy nó bằng DacFx, theo đúng thứ tự phụ thuộc.
+Không thứ tự file nào áp dụng được schema như vậy, kể cả `OrderedDirectories`. Project build ra một `.dacpac`, và `DbAiTest.MsSql.Dacpac` deploy nó bằng DacFx, theo đúng thứ tự phụ thuộc.
 
 {/* not in upstream: illustrative */}
 
 ```bash
-dotnet add package DbTest.MsSql.Dacpac
+dotnet add package DbAiTest.MsSql.Dacpac
 ```
 
 :::note
-`DacpacSchemaSource` chỉ deploy lên SQL Server. Với bất kỳ engine nào khác, bước setup ném `DbTestException` trước khi container khởi động.
+`DacpacSchemaSource` chỉ deploy lên SQL Server. Với bất kỳ engine nào khác, bước setup ném `DbAiTestException` trước khi container khởi động.
 :::
 
 ## Dùng dacpac làm schema
@@ -52,7 +52,7 @@ Bản thân database project:
 
 ### Thiếu dacpac thì fail trước khi container khởi động
 
-Source kiểm tra cấu hình trước khi container khởi động, nên lỗi hiện ra trong vài mili giây thay vì sau khi pull image và boot server. Thiếu dacpac sẽ ném `DbTestException` kèm đường dẫn đầy đủ mà nó đã tìm:
+Source kiểm tra cấu hình trước khi container khởi động, nên lỗi hiện ra trong vài mili giây thay vì sau khi pull image và boot server. Thiếu dacpac sẽ ném `DbAiTestException` kèm đường dẫn đầy đủ mà nó đã tìm:
 
 {/* not in upstream: illustrative */}
 

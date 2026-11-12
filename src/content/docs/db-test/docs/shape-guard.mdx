@@ -12,7 +12,7 @@ The shape guard fixes the blame.
 
 ## How it works
 
-The guard snapshots every table, view and routine after the schema is applied. `DbTestBase` re-reads them after every test, and fails the test that changed one.
+The guard snapshots every table, view and routine after the schema is applied. `DbAiTestBase` re-reads them after every test, and fails the test that changed one.
 
 <Code code={shapeGuardMessage} lang="text" />
 

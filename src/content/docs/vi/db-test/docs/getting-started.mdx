@@ -12,7 +12,7 @@ Thêm base class cho test framework của bạn và một package cho mỗi engi
 
 <Code code={installCommands} lang="bash" title="Install" />
 
-Riêng `DbTest.Core` cung cấp harness mà không gắn với test framework nào. `DbTest.MSTest` đã kéo nó theo.
+Riêng `DbAiTest.Core` cung cấp harness mà không gắn với test framework nào. `DbAiTest.MSTest` đã kéo nó theo.
 
 Về công cụ dòng lệnh, xem [CLI](/vi/db-test/docs/cli/).
 
@@ -73,11 +73,11 @@ Xem [schema](/vi/db-test/docs/schema/) để biết quy tắc sắp thứ tự, 
 
 ## 2. Viết test một lần
 
-Kế thừa `DbTestBase` trong một abstract class. `Harness` là harness dùng chung cho engine đang được test.
+Kế thừa `DbAiTestBase` trong một abstract class. `Harness` là harness dùng chung cho engine đang được test.
 
 <Code code={customerTestsClass} lang="csharp" />
 
-Các namespace cần dùng là `DbTest.Core.Engine` và `DbTest.MSTest`, cộng thêm một namespace cho mỗi engine: `DbTest.MsSql`, `DbTest.PostgreSql` hoặc `DbTest.MySql`.
+Các namespace cần dùng là `DbAiTest.Core.Engine` và `DbAiTest.MSTest`, cộng thêm một namespace cho mỗi engine: `DbAiTest.MsSql`, `DbAiTest.PostgreSql` hoặc `DbAiTest.MySql`.
 
 ## 3. Thêm một class cho mỗi engine
 
@@ -103,7 +103,7 @@ Các test dùng chung một container, nên chúng chạy lần lượt từng t
 
 <Code code={runSetupSample} lang="csharp" />
 
-`DbTestRun` nằm trong namespace `DbTest.MSTest`.
+`DbAiTestRun` nằm trong namespace `DbAiTest.MSTest`.
 
 :::caution
 Thiếu `[assembly: DoNotParallelize]`, các test thay đổi hình dạng của object dùng chung sẽ làm hỏng lẫn nhau. Container dùng chung đòi hỏi bộ test chạy tuần tự.

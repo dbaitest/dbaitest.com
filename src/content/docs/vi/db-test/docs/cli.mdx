@@ -1,12 +1,12 @@
 ---
 title: CLI
-description: Công cụ dòng lệnh dbtest - liệt kê engine, khởi động container database dùng một lần với schema đã áp dụng, và kiểm tra những gì schema tạo ra.
+description: Công cụ dòng lệnh dbaitest - liệt kê engine, khởi động container database dùng một lần với schema đã áp dụng, và kiểm tra những gì schema tạo ra.
 ---
 
 import { Code } from '@astrojs/starlight/components';
 import { cliCommands, cliInstallCommand } from '../../../../../lib/upstream-snippets';
 
-`dbtest` cung cấp các thao tác của harness hữu ích bên ngoài một lần chạy test: khởi động container với schema đã áp dụng, và kiểm tra kết quả.
+`dbaitest` cung cấp các thao tác của harness hữu ích bên ngoài một lần chạy test: khởi động container với schema đã áp dụng, và kiểm tra kết quả.
 
 ## Cài đặt
 
@@ -18,11 +18,11 @@ CLI tự roll forward, nên chạy được trên bất kỳ bản .NET 8 trở 
 
 <Code code={cliCommands} lang="bash" />
 
-### `dbtest engines`
+### `dbaitest engines`
 
 Liệt kê các engine đã đăng ký: `mssql`, `postgres` và `mysql`.
 
-### `dbtest up`
+### `dbaitest up`
 
 Khởi động container, áp dụng schema, in connection string, và giữ container chạy cho đến khi bạn nhấn Ctrl+C. Một container biến mất ngay khi connection string vừa được in thì chẳng có ích gì.
 
@@ -30,7 +30,7 @@ Khởi động container, áp dụng schema, in connection string, và giữ con
 
 Ctrl+C dừng lệnh và xóa container. Mã thoát là `0`.
 
-### `dbtest schema`
+### `dbaitest schema`
 
 Nạp thư mục schema, in các script sẽ được áp dụng cùng các file bị loại trừ (nếu có), rồi khởi động container, áp dụng schema, liệt kê các object nó đã tạo, và xóa container.
 
@@ -56,7 +56,7 @@ Dạng output ví dụ:
 | `--engine <name>` | `mssql`, `postgres` hoặc `mysql`. |
 | `--schema <dir>` | Thư mục chứa các file schema. |
 | `--image <image>` | Ghi đè container image. |
-| `--database <name>` | Tên database bên trong container. Mặc định: `dbtest`. |
+| `--database <name>` | Tên database bên trong container. Mặc định: `dbaitest`. |
 | `--username <name>` | Tài khoản đăng nhập bên trong container. Mặc định: của riêng engine. |
 | `--password <pass>` | Mật khẩu bên trong container. Mặc định: của riêng engine. |
 
@@ -72,7 +72,7 @@ CLI áp dụng một thư mục file SQL. Nó không deploy `.dacpac`.
 
 | Mã | Ý nghĩa |
 |---|---|
-| `0` | Thành công. Bao gồm cả khi nhấn Ctrl+C trên `dbtest up` đang chạy, sau khi container đã sẵn sàng. |
-| `1` | Một lỗi như Docker không chạy, schema hỏng hoặc image sai. Được báo bằng một dòng `error:`, không phải stack trace. `dbtest` không có đối số cũng thoát với mã `1`: nó in hướng dẫn sử dụng ra standard error, không có dòng `error:`. |
+| `0` | Thành công. Bao gồm cả khi nhấn Ctrl+C trên `dbaitest up` đang chạy, sau khi container đã sẵn sàng. |
+| `1` | Một lỗi như Docker không chạy, schema hỏng hoặc image sai. Được báo bằng một dòng `error:`, không phải stack trace. `dbaitest` không có đối số cũng thoát với mã `1`: nó in hướng dẫn sử dụng ra standard error, không có dòng `error:`. |
 | `2` | Lỗi cách dùng: lệnh hoặc tùy chọn không biết, thiếu giá trị hoặc thiếu tùy chọn bắt buộc. Phần hướng dẫn sử dụng được in sau thông báo. |
-| `130` | Bị hủy bằng Ctrl+C trước khi lệnh hoàn tất: khi `dbtest up` còn đang khởi động container hoặc áp dụng schema, hoặc khi `dbtest schema` đang chạy. Thông báo là `Cancelled.`. |
+| `130` | Bị hủy bằng Ctrl+C trước khi lệnh hoàn tất: khi `dbaitest up` còn đang khởi động container hoặc áp dụng schema, hoặc khi `dbaitest schema` đang chạy. Thông báo là `Cancelled.`. |

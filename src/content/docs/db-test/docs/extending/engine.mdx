@@ -82,7 +82,7 @@ To make the CLI know it, register it by name with the static `EngineRegistry`:
 EngineRegistry.Register("myengine", () => new MyEngine());
 ```
 
-The core assembly deliberately references no engine package, so the mapping from a name to an implementation lives with the application that owns the engine packages. The `dbtest` tool registers only its three built-in engines.
+The core assembly deliberately references no engine package, so the mapping from a name to an implementation lives with the application that owns the engine packages. The `dbaitest` tool registers only its three built-in engines.
 
 ## Things worth knowing
 

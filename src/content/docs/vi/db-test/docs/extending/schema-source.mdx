@@ -3,7 +3,7 @@ title: Viết một nguồn schema
 description: Đưa một schema không phải thư mục file SQL vào db-test bằng cách hiện thực một SchemaSource.
 ---
 
-Schema không phải thư mục file SQL được đưa vào qua một `SchemaSource`. Truyền nó vào `DbTestHarness.StartAsync(engine, source)`, hoặc trả về từ `DbTestBase.SchemaSource`.
+Schema không phải thư mục file SQL được đưa vào qua một `SchemaSource`. Truyền nó vào `DbAiTestHarness.StartAsync(engine, source)`, hoặc trả về từ `DbAiTestBase.SchemaSource`.
 
 Có hai source có sẵn: `DirectorySchemaSource`, chính là thứ `schemaRoot` dùng, và `DacpacSchemaSource`, được mô tả trong [Database project của SQL Server](/vi/db-test/docs/sql-server-database-projects/).
 
@@ -23,7 +23,7 @@ Nó được đọc trước khi bất kỳ container nào khởi động, nên 
 
 Chạy trước khi container khởi động. Nó là virtual và mặc định không làm gì.
 
-Ném `DbTestException` cho lỗi cấu hình, như thiếu file hoặc một engine mà source không deploy được, để lỗi hiện ra trong vài mili giây thay vì sau khi pull image và boot server.
+Ném `DbAiTestException` cho lỗi cấu hình, như thiếu file hoặc một engine mà source không deploy được, để lỗi hiện ra trong vài mili giây thay vì sau khi pull image và boot server.
 
 ### `ApplyAsync(context, cancellationToken)`
 
@@ -42,7 +42,7 @@ public sealed class SnapshotSchemaSource(string snapshotPath) : SchemaSource
     {
         if (!File.Exists(_path))
         {
-            throw new DbTestException($"Snapshot not found at '{_path}'.");
+            throw new DbAiTestException($"Snapshot not found at '{_path}'.");
         }
     }
 
@@ -81,4 +81,4 @@ public sealed class SnapshotSchemaSource(string snapshotPath) : SchemaSource
 
 Một source resolve đường dẫn tương đối theo **thư mục hiện tại**. Để resolve theo thư mục của test binary, hãy truyền `Path.Join(AppContext.BaseDirectory, ...)`.
 
-`DbTestBase.SchemaRoot` thì khác: nó vẫn resolve theo thư mục của test binary. Xem [xử lý sự cố](/vi/db-test/docs/troubleshooting/) để biết điều gì xảy ra khi đặt cả `SchemaSource` và `SchemaRoot`.
+`DbAiTestBase.SchemaRoot` thì khác: nó vẫn resolve theo thư mục của test binary. Xem [xử lý sự cố](/vi/db-test/docs/troubleshooting/) để biết điều gì xảy ra khi đặt cả `SchemaSource` và `SchemaRoot`.

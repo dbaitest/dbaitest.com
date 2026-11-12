@@ -172,7 +172,7 @@ export const cliInstallCommand = codeBlock(readmeSection('Install'), { lang: 'ba
 
 /** The README's two opening C# blocks: the three-engine sample, then the once-per-project setup. */
 export const engineSample = codeBlock(readmeSection(null), { lang: 'csharp', index: 0, contains: 'abstract class CustomerTests' });
-export const runSetupSample = codeBlock(readmeSection(null), { lang: 'csharp', index: 1, contains: 'DbTestRun.DisposeAllAsync' });
+export const runSetupSample = codeBlock(readmeSection(null), { lang: 'csharp', index: 1, contains: 'DbAiTestRun.DisposeAllAsync' });
 
 const sample = upstreamText('db-test README.md (three-engine sample)', engineSample);
 export const customerTestsClass = topLevelBlock(sample, 'public abstract class CustomerTests');
@@ -183,7 +183,7 @@ export const engineTestClasses = {
 };
 
 const schema = readmeSection('The schema');
-export const schemaStartAsync = codeBlock(schema, { lang: 'csharp', index: 0, contains: 'DbTestHarness.StartAsync' });
+export const schemaStartAsync = codeBlock(schema, { lang: 'csharp', index: 0, contains: 'DbAiTestHarness.StartAsync' });
 export const schemaCopyToOutput = codeBlock(schema, { lang: 'xml', contains: 'CopyToOutputDirectory' });
 export const schemaLoaderSample = codeBlock(schema, { lang: 'csharp', index: 1, contains: 'SchemaLoader.Load' });
 
@@ -197,8 +197,8 @@ const queries = readmeSection('Queries');
 export const scalarQueries = codeBlock(queries, { lang: 'csharp', index: 0, contains: 'QueryScalarAsync' });
 export const openConnectionCall = codeBlock(queries, { lang: 'csharp', index: 1, contains: 'OpenConnectionAsync' });
 
-export const timingCommand = codeBlock(readmeSection('Diagnostics'), { lang: 'bash', contains: 'DBTEST_TIMING=1' });
-export const cliCommands = codeBlock(readmeSection('The CLI'), { lang: 'bash', contains: 'dbtest engines' });
+export const timingCommand = codeBlock(readmeSection('Diagnostics'), { lang: 'bash', contains: 'DBAITEST_TIMING=1' });
+export const cliCommands = codeBlock(readmeSection('The CLI'), { lang: 'bash', contains: 'dbaitest engines' });
 
 /** The README's `DacpacSchemaSource.CreateDefaultOptions` block, indented inside a list item upstream. */
 export const dacpacDefaultOptions = codeBlock(readmeSection('SQL Server database projects'), {

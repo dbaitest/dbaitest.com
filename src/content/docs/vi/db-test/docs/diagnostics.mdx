@@ -1,6 +1,6 @@
 ---
 title: Chẩn đoán
-description: Output thời gian chạy từng test cho bộ test db-test, bật bằng DBTEST_TIMING=1 và ghi ra file TSV.
+description: Output thời gian chạy từng test cho bộ test db-test, bật bằng DBAITEST_TIMING=1 và ghi ra file TSV.
 ---
 
 import { Code } from '@astrojs/starlight/components';
@@ -12,24 +12,24 @@ import { timingCommand } from '../../../../../lib/upstream-snippets';
 
 <Code code={timingCommand} lang="bash" />
 
-Với `DbTest.MSTest`, lệnh này ghi một dòng cho mỗi test vào `dbtest-timing.tsv` cạnh test binary.
+Với `DbAiTest.MSTest`, lệnh này ghi một dòng cho mỗi test vào `dbaitest-timing.tsv` cạnh test binary.
 
 Mặc định tính năng này tắt: không có file nào được ghi trừ khi bạn bật, và chỉ đúng giá trị `1` mới bật nó.
 
 ## Chọn file
 
-Đặt `DBTEST_TIMING_FILE` để ghi ra nơi khác:
+Đặt `DBAITEST_TIMING_FILE` để ghi ra nơi khác:
 
 {/* not in upstream: illustrative */}
 
 ```bash
-DBTEST_TIMING=1 DBTEST_TIMING_FILE=timings.tsv dotnet test
+DBAITEST_TIMING=1 DBAITEST_TIMING_FILE=timings.tsv dotnet test
 ```
 
 | Biến | Tác dụng |
 |---|---|
-| `DBTEST_TIMING` | `1` bật tính giờ. Giá trị khác thì giữ nguyên trạng thái tắt. |
-| `DBTEST_TIMING_FILE` | Ghi đè đường dẫn output. Mặc định: `dbtest-timing.tsv` cạnh test binary. |
+| `DBAITEST_TIMING` | `1` bật tính giờ. Giá trị khác thì giữ nguyên trạng thái tắt. |
+| `DBAITEST_TIMING_FILE` | Ghi đè đường dẫn output. Mặc định: `dbaitest-timing.tsv` cạnh test binary. |
 
 ## Nội dung file
 

@@ -21,16 +21,16 @@ If a file references an object created by another file, check the [order](/db-te
 
 A relative path resolved to a directory that does not exist. Two rules apply:
 
-- `DbTestBase.SchemaRoot` resolves against the test binaries' directory. Copy the schema next to them with `<None Include="Schema\**\*" CopyToOutputDirectory="PreserveNewest" />`.
-- `DbTestHarness.StartAsync(schemaRoot: ...)`, `SchemaLoader.Load` and a `SchemaSource` resolve against the **current directory**. Pass an absolute path, or build one from `AppContext.BaseDirectory`.
+- `DbAiTestBase.SchemaRoot` resolves against the test binaries' directory. Copy the schema next to them with `<None Include="Schema\**\*" CopyToOutputDirectory="PreserveNewest" />`.
+- `DbAiTestHarness.StartAsync(schemaRoot: ...)`, `SchemaLoader.Load` and a `SchemaSource` resolve against the **current directory**. Pass an absolute path, or build one from `AppContext.BaseDirectory`.
 
 ### `Dacpac not found at '...'`
 
-The dacpac was not built or not copied next to the tests. This is a `DbTestException` thrown before any container starts, with the full path it looked for. See [Build and copy the dacpac](/db-test/docs/sql-server-database-projects/#build-and-copy-the-dacpac).
+The dacpac was not built or not copied next to the tests. This is a `DbAiTestException` thrown before any container starts, with the full path it looked for. See [Build and copy the dacpac](/db-test/docs/sql-server-database-projects/#build-and-copy-the-dacpac).
 
 ### `SchemaSource cannot be combined with SchemaRoot or SchemaLoadOptions`
 
-An `InvalidOperationException` from `DbTestBase`. A schema source carries its own location and options. Override only `SchemaSource`, or use `DirectorySchemaSource` for a directory.
+An `InvalidOperationException` from `DbAiTestBase`. A schema source carries its own location and options. Override only `SchemaSource`, or use `DirectorySchemaSource` for a directory.
 
 ### A deploy of the dacpac fails
 
@@ -50,11 +50,11 @@ It does not work under globalization invariant mode. Do not enable `InvariantGlo
 
 ### CS0108 on `SchemaSource`
 
-`DbTestBase` now has a member named `SchemaSource`. A test class that already declares its own member with that name hides the base one, which is an error under `TreatWarningsAsErrors`. Rename your member.
+`DbAiTestBase` now has a member named `SchemaSource`. A test class that already declares its own member with that name hides the base one, which is an error under `TreatWarningsAsErrors`. Rename your member.
 
 ### CS0121 on `StartAsync` or `GetHarnessAsync`
 
-Passing a `null` or `default` literal as the second argument of `DbTestHarness.StartAsync` or `DbTestRun.GetHarnessAsync` no longer compiles: the call matches both the `string` and the `SchemaSource` overload. Omit the argument, or write `(string?)null`. Compiled code is unaffected.
+Passing a `null` or `default` literal as the second argument of `DbAiTestHarness.StartAsync` or `DbAiTestRun.GetHarnessAsync` no longer compiles: the call matches both the `string` and the `SchemaSource` overload. Omit the argument, or write `(string?)null`. Compiled code is unaffected.
 
 ## Test failures
 

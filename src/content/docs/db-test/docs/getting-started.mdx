@@ -12,7 +12,7 @@ Add the base class for your test framework and one package per engine you test a
 
 <Code code={installCommands} lang="bash" title="Install" />
 
-`DbTest.Core` alone gives the harness without any test framework. `DbTest.MSTest` brings it in.
+`DbAiTest.Core` alone gives the harness without any test framework. `DbAiTest.MSTest` brings it in.
 
 For the command-line tool, see [the CLI](/db-test/docs/cli/).
 
@@ -73,11 +73,11 @@ See [the schema](/db-test/docs/schema/) for ordering, splitting and exclusion ru
 
 ## 2. Write the test once
 
-Derive from `DbTestBase` in an abstract class. `Harness` is the shared harness for the engine under test.
+Derive from `DbAiTestBase` in an abstract class. `Harness` is the shared harness for the engine under test.
 
 <Code code={customerTestsClass} lang="csharp" />
 
-The namespaces are `DbTest.Core.Engine` and `DbTest.MSTest`, plus one per engine: `DbTest.MsSql`, `DbTest.PostgreSql` or `DbTest.MySql`.
+The namespaces are `DbAiTest.Core.Engine` and `DbAiTest.MSTest`, plus one per engine: `DbAiTest.MsSql`, `DbAiTest.PostgreSql` or `DbAiTest.MySql`.
 
 ## 3. Add one class per engine
 
@@ -103,7 +103,7 @@ Tests share a container, so they run one at a time, and the containers should be
 
 <Code code={runSetupSample} lang="csharp" />
 
-`DbTestRun` is in the `DbTest.MSTest` namespace.
+`DbAiTestRun` is in the `DbAiTest.MSTest` namespace.
 
 :::caution
 Without `[assembly: DoNotParallelize]`, tests that reshape shared objects corrupt each other. A shared container requires a sequential suite.
